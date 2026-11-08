@@ -22,6 +22,8 @@ const PAGE = [
   './engine/cards.js',
   './engine/days.js',
   './engine/formats.js',
+  './engine/glossary.js',
+  './engine/lessons.js',
   './engine/option-order.js',
   './engine/presentations.js',
   './engine/random.js',
