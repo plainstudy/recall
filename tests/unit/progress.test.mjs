@@ -1,0 +1,127 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import {
+  PROGRESS_MESSAGES,
+  checkProfile,
+  checkProgress,
+  emptyInstalled,
+  installedFrom,
+  newProgress,
+  newerOf,
+  restoredProgress,
+} from '../../engine/progress.js';
+import { clockAt } from './clock.mjs';
+import { fixture, seasonedProgress } from './fixtures.mjs';
+
+test("first run creates the progress object with spec §3.7's starting values", () => {
+  const clock = clockAt('2026-11-16T02:30:00+03:00');
+  assert.deepEqual(newProgress({ name: 'Sam', role: 'Baker' }, clock, '0.2.0'), {
+    schemaVersion: 2,
+    savedOn: '2026-11-16T02:30:00+03:00',
+    engineVersion: '0.2.0',
+    profile: { name: 'Sam', role: 'Baker', createdOn: '2026-11-15' },
+    installed: {
+      bundleId: null,
+      bundleVersion: null,
+      title: null,
+      reportPrefix: null,
+      trackId: null,
+      trackVersion: null,
+      trackTitle: null,
+      glossaryVersion: null,
+      packs: {},
+    },
+    settings: { sessionSeconds: 660, theme: 'phone' },
+    streak: {
+      current: 0,
+      longest: 0,
+      lastCountedDay: null,
+      checkedThrough: null,
+      freezesRemaining: 2,
+      freezesUsedOn: [],
+      countedRun: 0,
+      dayBoundaryHour: 4,
+    },
+    position: { currentLesson: null, currentCardIndex: 0, lessonsCompleted: [], catchingUp: false },
+    atoms: {},
+    families: {},
+    confusions: [],
+    termRequests: [],
+    sessionLog: [],
+    reportsSavedOn: [],
+  });
+});
+
+test('name and role are required, trimmed, and at most 40 characters', () => {
+  assert.deepEqual(checkProfile({ name: '  Sam  ', role: ' Head baker ' }), { ok: true, profile: { name: 'Sam', role: 'Head baker' }, problems: {} });
+  assert.deepEqual(checkProfile({ name: '   ', role: '' }).problems, { name: PROGRESS_MESSAGES.nameMissing, role: PROGRESS_MESSAGES.roleMissing });
+  assert.equal(checkProfile({ name: 'x'.repeat(40), role: 'r' }).ok, true);
+  assert.deepEqual(checkProfile({ name: 'x'.repeat(41), role: 'r' }).problems, { name: PROGRESS_MESSAGES.tooLong });
+  assert.equal(checkProfile({ name: 'Ю'.repeat(40), role: 'r' }).ok, true, 'characters, not bytes');
+});
+
+test('of two copies the later-saved one wins, and the first on a tie', () => {
+  const a = { savedOn: '2026-11-15T07:14:00+03:00', id: 'a' };
+  const b = { savedOn: '2026-11-15T05:00:00+00:00', id: 'b' };
+  assert.equal(newerOf(a, b).id, 'b', '05:00 UTC is after 04:14 UTC');
+  assert.equal(newerOf(b, a).id, 'b');
+  assert.equal(newerOf(a, { ...a, id: 'c' }).id, 'a');
+  assert.equal(newerOf(null, b).id, 'b');
+  assert.equal(newerOf(a, null).id, 'a');
+  assert.equal(newerOf(a, { savedOn: 'garbled' }).id, 'a');
+  assert.equal(newerOf(null, null), null);
+});
+
+test('installed describes the content on the phone', () => {
+  const bundle = fixture('bundle-bakery.json');
+  const { glossary, packs, track, ...details } = bundle;
+  assert.deepEqual(installedFrom({ bundle: details, glossary, track, packs: { bakery_basics: packs[0] } }), {
+    bundleId: 'bakery',
+    bundleVersion: '1.0',
+    title: 'Bakery School',
+    reportPrefix: 'Bakery_School',
+    trackId: 'baker',
+    trackVersion: '1.0',
+    trackTitle: 'Baker',
+    glossaryVersion: '1.1',
+    packs: { bakery_basics: '1.0' },
+  });
+  assert.deepEqual(installedFrom({ bundle: null, glossary: null, track: null, packs: {} }), emptyInstalled());
+});
+
+test("a report's progress is checked against the progress object, and a newer app's is refused", () => {
+  const clock = clockAt('2026-11-15T07:14:00+03:00');
+  const good = seasonedProgress(newProgress({ name: 'Sam', role: 'Baker' }, clock, '0.2.0'));
+  assert.deepEqual(checkProgress(good), { ok: true });
+  assert.deepEqual(checkProgress({ ...good, schemaVersion: 3 }), { ok: false, message: PROGRESS_MESSAGES.newerApp, field: 'schemaVersion' });
+  assert.equal(PROGRESS_MESSAGES.newerApp, 'This report comes from a newer version of the app. Restart the app when it has updated.');
+  const broken = [
+    ['schemaVersion', { ...good, schemaVersion: 1 }],
+    ['schemaVersion', { ...good, schemaVersion: '2' }],
+    ['savedOn', { ...good, savedOn: '2026-11-15' }],
+    ['profile', { ...good, profile: { name: 'Sam' } }],
+    ['settings', { ...good, settings: { sessionSeconds: 600, theme: 'phone' } }],
+    ['settings', { ...good, settings: { sessionSeconds: 660, theme: 'dark' } }],
+    ['streak', { ...good, streak: { ...good.streak, freezesRemaining: 3 } }],
+    ['position', { ...good, position: { ...good.position, currentCardIndex: -1 } }],
+    ['atoms', { ...good, atoms: { 'atom.x.y': { box: 6, dueOn: '2026-11-20' } } }],
+    ['atoms', { ...good, atoms: { 'atom.x.y': { box: 2, dueOn: 'tomorrow' } } }],
+    ['termRequests', { ...good, termRequests: [{ text: 'x' }] }],
+    ['reportsSavedOn', { ...good, reportsSavedOn: ['last week'] }],
+  ];
+  for (const [field, progress] of broken) {
+    assert.deepEqual(checkProgress(progress), { ok: false, message: PROGRESS_MESSAGES.mismatch, field }, field);
+  }
+  assert.equal(checkProgress([]).ok, false);
+});
+
+test("a restore takes the report's progress, all but this phone's installed", () => {
+  const clock = clockAt('2026-11-15T07:14:00+03:00');
+  const report = seasonedProgress(newProgress({ name: 'Sam', role: 'Baker' }, clock, '0.2.0'));
+  report.installed = { ...emptyInstalled(), bundleId: 'elsewhere', packs: { other: '3.0' } };
+  clock.set('2026-11-20T09:00:00+03:00');
+  const phone = newProgress({ name: 'Test', role: 'Test' }, clock, '0.2.0');
+  phone.installed = { ...emptyInstalled(), bundleId: 'bakery', packs: { bakery_basics: '1.0' } };
+  const restored = restoredProgress(phone, report, clock, '0.2.0');
+  assert.deepEqual(restored, { ...report, installed: phone.installed, savedOn: '2026-11-20T09:00:00+03:00' });
+});
