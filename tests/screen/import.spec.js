@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { MESSAGES, problemText } from '../../engine/validate.js';
+import { ENGINE_VERSION } from '../../version.js';
 import { chooseFile, firstRun, fixturePath, install, readStored, watchErrors } from './helpers.js';
 
 const packWith = async (change) => {
@@ -30,7 +31,7 @@ test('a pack is imported after its glossary; a malformed one, or one needing a n
   await expectRefusal(
     page,
     await packWith((p) => (p.engineMin = '0.3.0')),
-    'This pack needs engine 0.3.0 or later. This app is 0.2.0. Restart the app when it has updated.',
+    `This pack needs engine 0.3.0 or later. This app is ${ENGINE_VERSION}. Restart the app when it has updated.`,
   );
   await expectRefusal(
     page,
