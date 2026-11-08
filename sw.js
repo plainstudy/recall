@@ -43,6 +43,7 @@ const PAGE = [
   './ui/dom.js',
   './ui/figure.js',
   './ui/platform.js',
+  './ui/storage.js',
   './ui/viewer.js',
 ];
 
