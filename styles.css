@@ -550,3 +550,155 @@ ul.answer-key-list {
 .summary-line {
   font-size: 20px;
 }
+
+/* Phase 2 screens: first run, the start screen, Import and the questions. */
+h2 {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+label {
+  font-weight: 600;
+}
+
+input[type='text'] {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+}
+
+input[type='text']:focus-visible {
+  outline: 3px solid var(--text);
+  outline-offset: 2px;
+}
+
+input[aria-invalid='true'] {
+  border-color: var(--trip);
+}
+
+.field-problem {
+  color: var(--trip-text);
+  font-size: 15px;
+}
+
+.field-problem:empty {
+  display: none;
+}
+
+.learner,
+.installed-name,
+.file-name,
+.change-line,
+.warning,
+.question-text p,
+.app-title {
+  overflow-wrap: anywhere;
+}
+
+.change-line,
+.warning,
+.question-text p {
+  white-space: pre-line;
+}
+
+.start-section {
+  padding-top: 16px;
+}
+
+.nothing-installed {
+  margin-top: 8px;
+  color: var(--muted);
+}
+
+.pack-heading {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.lesson-current {
+  border-color: var(--text);
+}
+
+.lesson-marker-current {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.track-stop {
+  margin-top: 16px;
+}
+
+.installed-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding: 0;
+  list-style: none;
+}
+
+.installed-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+  min-height: var(--tap);
+}
+
+.installed-name {
+  flex: 1 1 auto;
+}
+
+.start-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.start-screen .version,
+.first-run .version {
+  padding-top: 16px;
+}
+
+.change-lines,
+.question-text {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.warnings {
+  padding-top: 16px;
+}
+
+.warnings ul {
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.refusal {
+  margin-top: 8px;
+  border-left-color: var(--trip);
+}
+
+.refusal-more,
+.refusal-after {
+  color: var(--muted);
+}

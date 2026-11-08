@@ -7,10 +7,10 @@ import {
   expectNothingWide,
   measureScreen,
   openLesson,
-  openPack,
   playCards,
   playLesson,
   readFixturePack,
+  setUp,
   watchErrors,
 } from './helpers.js';
 
@@ -32,7 +32,7 @@ test('every card type renders and takes an answer, right and then wrong, within 
     if (url.origin === origin && !url.pathname.endsWith('/sw.js')) requested.add(`.${url.pathname}`);
   });
 
-  await openPack(page, 'pack-bakery.json');
+  await setUp(page);
   for (const [i, lesson] of pack.lessons.entries()) {
     const testable = lesson.cards.filter(isTestable);
     const results = (correct) => testable.map((c) => ({ trap: c.trap === true, correct }));
@@ -49,7 +49,7 @@ test('every card type renders and takes an answer, right and then wrong, within 
     await expect(page.locator('.summary-line')).toHaveText(summaryLine(tally(lesson.cards.length, results(false))));
 
     await page.getByRole('button', { name: 'Lessons' }).click();
-    await expect(page.locator('.lessons-screen')).toBeVisible();
+    await expect(page.locator('.start-screen')).toBeVisible();
   }
 
   expect(errors).toEqual([]);
@@ -66,7 +66,7 @@ test('after a wrong answer to a trap card, the explanation is its trap feedback,
   const trap = lesson.cards[at];
   const chosen = trap.options.find((o) => !o.correct);
 
-  await openPack(page, 'pack-bakery.json');
+  await setUp(page);
   await openLesson(page, 2);
   await playCards(page, lesson.cards.slice(0, at), 'right');
   const screen = page.locator('.card-screen');

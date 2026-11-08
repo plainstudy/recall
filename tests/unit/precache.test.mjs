@@ -56,7 +56,7 @@ async function filesTheAppLoads() {
 test('the precache list holds every file the app loads', async () => {
   const listed = new Set(await precacheList());
   const loaded = await filesTheAppLoads();
-  assert.ok(loaded.has('./app.js') && loaded.has('./styles.css') && loaded.has('./ui/viewer.js'));
+  assert.ok(loaded.has('./app.js') && loaded.has('./styles.css') && loaded.has('./ui/controller.js'));
   const missing = [...loaded].filter((path) => !listed.has(path));
   assert.deepEqual(missing, [], `missing from sw.js: ${missing.join(', ')}`);
 });

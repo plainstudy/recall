@@ -28,6 +28,9 @@ const PREFIX = /^[A-Za-z0-9_]+$/;
 const STATUSES = ['verified', 'needs-review', 'unverified'];
 const ARTIFACT_KINDS = ['enquiry', 'quote', 'report', 'nameplate'];
 
+// "an mcq card", "a cloze card": the article as the type's name is said.
+const aCard = (type) => `${['mcq', 'order'].includes(type) ? 'an' : 'a'} ${type} card`;
+
 export const MESSAGES = {
   olderPack: 'This pack is in an older format and needs converting.',
   olderGlossary: 'This glossary is in an older format and needs converting.',
@@ -52,14 +55,14 @@ export const MESSAGES = {
   idElsewhere: (kind, id, where) => `the ${kind} id "${id}" is already used in ${where}.`,
   badPrerequisite: (id) => `its prerequisite "${id}" isn't an earlier lesson.`,
   unknownType: (type) => `its type "${type}" isn't one this version knows.`,
-  noSrsKey: (type) => `a ${type} card needs an srsKey.`,
+  noSrsKey: (type) => `${aCard(type)} needs an srsKey.`,
   teachSrsKey: 'a teach card never has an srsKey.',
   badSrsKey: 'its srsKey must look like atom.category.name, in lowercase.',
-  badCount: (type, noun, min, max, n) => `a ${type} card needs ${min} to ${max} ${noun}; this one has ${n}.`,
+  badCount: (type, noun, min, max, n) => `${aCard(type)} needs ${min} to ${max} ${noun}; this one has ${n}.`,
   badEntry: (noun, n, needs) => `${noun} ${n} needs ${needs}.`,
   sharedId: (noun, id) => `two of its ${noun} share the id "${id}".`,
-  oneCorrect: (type, noun, n) => `a ${type} card needs exactly one correct ${noun}; this one has ${n}.`,
-  someCorrect: (type) => `a ${type} card needs at least one correct option.`,
+  oneCorrect: (type, noun, n) => `${aCard(type)} needs exactly one correct ${noun}; this one has ${n}.`,
+  someCorrect: (type) => `${aCard(type)} needs at least one correct option.`,
   positions: (n) => `its items' positions must run from 1 to ${n}, once each.`,
   clozeGap: (n) => `a cloze card needs exactly one gap, written ___, in its prompt; this one has ${n}.`,
   variantTerm: 'a variant card needs the term it is about.',

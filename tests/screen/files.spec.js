@@ -1,56 +1,75 @@
 import { expect, test } from '@playwright/test';
-import { MESSAGES } from '../../engine/cards.js';
-import { isTestable, summaryLine, tally } from '../../engine/scoring.js';
-import { VIEWER_MESSAGES } from '../../ui/viewer.js';
-import { fixturePath, openLesson, openPack, playLesson, readFixturePack, watchErrors } from './helpers.js';
+import { FORMAT_MESSAGES } from '../../engine/formats.js';
+import { MESSAGES } from '../../engine/validate.js';
+import { chooseFile, firstRun, install, openLesson, readFixturePack, readStored, setUp, watchErrors } from './helpers.js';
 
-test('a pack in the older shape opens and plays', async ({ page }) => {
+const asFile = (name, data) => ({ name, mimeType: 'application/json', buffer: Buffer.from(typeof data === 'string' ? data : JSON.stringify(data)) });
+
+async function expectRefused(page, message, more = 0) {
+  await expect(page.locator('.import-refused')).toBeVisible();
+  await expect(page.getByRole('alert')).toHaveText(message);
+  await expect(page.locator('.refusal-more')).toHaveCount(more > 0 ? 1 : 0);
+  await page.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(page.locator('.start-screen')).toBeVisible();
+}
+
+test('a pack in the older shape is refused with the older-format message, and nothing changes', async ({ page }) => {
   const errors = watchErrors(page);
-  const pack = await readFixturePack('pack-bakery-old.json');
-  const lesson = pack.lessons[0];
-  await openPack(page, 'pack-bakery-old.json');
-  await expect(page.getByRole('heading', { name: pack.title })).toBeVisible();
-  await openLesson(page, 1);
-  await playLesson(page, lesson, 'right');
-  const results = lesson.cards.filter(isTestable).map(() => ({ trap: false, correct: true }));
-  await expect(page.locator('.summary-line')).toHaveText(summaryLine(tally(lesson.cards.length, results)));
+  await setUp(page, ['glossary.json']);
+  const before = await readStored(page);
+  await chooseFile(page, 'Import', 'pack-bakery-old.json');
+  await expect(page.locator('.file-name')).toHaveText('pack-bakery-old.json');
+  await expectRefused(page, MESSAGES.olderPack);
+  await expect(page.getByText('Nothing installed yet.')).toHaveCount(0);
+  await expect(page.locator('.lesson')).toHaveCount(0);
+  expect(await readStored(page)).toEqual(before);
   expect(errors).toEqual([]);
 });
 
 test('the lesson list leaves out unverified lessons and marks those that need review', async ({ page }) => {
-  await openPack(page, 'pack-bakery.json');
+  await setUp(page);
   const lessons = page.locator('.lesson');
   await expect(lessons).toHaveCount(2);
   await expect(page.getByText('An unverified draft')).toHaveCount(0);
-  await expect(lessons.nth(0).locator('.lesson-marker')).toHaveCount(0);
-  await expect(lessons.nth(1).locator('.lesson-marker')).toHaveText('Needs review');
+  await expect(lessons.nth(0).locator('.lesson-marker', { hasText: 'Needs review' })).toHaveCount(0);
+  await expect(lessons.nth(1).locator('.lesson-marker', { hasText: 'Needs review' })).toHaveCount(1);
 });
 
-test('a file that is not a pack gets a plain message, never a blank screen', async ({ page }) => {
-  await page.goto('/');
-  const input = page.locator('input[type=file]');
-  await input.setInputFiles({ name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('not a pack') });
-  await expect(page.getByRole('alert')).toHaveText(VIEWER_MESSAGES.notJson);
-  await expect(page.getByRole('button', { name: 'Open a pack file' })).toBeVisible();
-  await input.setInputFiles(fixturePath('glossary.json'));
-  await expect(page.getByRole('alert')).toHaveText(MESSAGES.glossary);
-  await input.setInputFiles({ name: 'empty.json', mimeType: 'application/json', buffer: Buffer.from('{"lessons": []}') });
-  await expect(page.getByRole('alert')).toHaveText(MESSAGES.noLessons);
+test('a file the app can’t import gets a plain message, never a blank screen', async ({ page }) => {
+  await firstRun(page);
+  await chooseFile(page, 'Import', { name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('not a pack') });
+  await expectRefused(page, FORMAT_MESSAGES.notImportable);
+  await chooseFile(page, 'Import', asFile('empty.json', { lessons: [] }));
+  await expectRefused(page, FORMAT_MESSAGES.notImportable);
+  await chooseFile(page, 'Import', asFile('set.json', { testSetId: 'hard-cards' }));
+  await expectRefused(page, FORMAT_MESSAGES.testSet);
+  await chooseFile(page, 'Import', { name: 'big.json', mimeType: 'application/json', buffer: Buffer.alloc(10 * 1024 * 1024 + 1, 32) });
+  await expectRefused(page, FORMAT_MESSAGES.tooLarge);
+  await chooseFile(page, 'Import', { name: 'report.md', mimeType: 'text/markdown', buffer: Buffer.from('# Bakery School — weekly report\n\nNo block.\n') });
+  await expectRefused(page, FORMAT_MESSAGES.reportWithoutBlock);
+  await expect(page.getByText('Nothing installed yet.')).toBeVisible();
 });
 
-test('a card that cannot be shown says so, and the lesson carries on', async ({ page }) => {
+test('cards the engine can’t show are refused at import, with every problem counted', async ({ page }) => {
   const pack = {
-    title: 'Broken cards',
+    packId: 'odd_shapes',
+    packVersion: '1.0',
+    engineMin: '0.2.0',
+    contentClass: 'public',
+    order: 1,
+    title: 'Odd shapes',
     lessons: [
       {
         lessonId: 'x1',
         order: 1,
         title: 'Odd shapes',
+        verification: { status: 'verified' },
         cards: [
           { cardId: 'x1_c1', type: 'flashcard', prompt: 'A type the engine does not know.' },
           {
             cardId: 'x1_c2',
             type: 'hotspot',
+            srsKey: 'atom.shape.spot',
             prompt: 'A hotspot without its figure.',
             figure: 'absent',
             regions: [
@@ -62,23 +81,19 @@ test('a card that cannot be shown says so, and the lesson carries on', async ({ 
       },
     ],
   };
-  await page.goto('/');
-  await page
-    .locator('input[type=file]')
-    .setInputFiles({ name: 'broken.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(pack)) });
-  await openLesson(page, 1);
-  await expect(page.locator('.notice')).toHaveText(MESSAGES.unknownType);
-  await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page.locator('.notice')).toHaveText(MESSAGES.figureMissing);
-  await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page.locator('.summary-line')).toHaveText('2 cards, 0 answered, 0 correct, no traps.');
+  await firstRun(page);
+  await chooseFile(page, 'Import', asFile('broken.json', pack));
+  await expect(page.getByRole('alert')).toHaveText(`Card x1_c1: ${MESSAGES.unknownType('flashcard')}`);
+  await expect(page.locator('.refusal-more')).toHaveText('There is 1 more problem.');
+  await expectRefused(page, `Card x1_c1: ${MESSAGES.unknownType('flashcard')}`, 1);
+  await expect(page.getByText('Nothing installed yet.')).toBeVisible();
 });
 
 test('figures: stepped frames show one step at a time, and a missing figure is left out', async ({ page }) => {
   const pack = await readFixturePack('pack-bakery.json');
   const stepped = pack.lessons[0].cards[2];
   expect(stepped.resolvedFigure.layers.length).toBe(3);
-  await openPack(page, 'pack-bakery.json');
+  await setUp(page);
   await openLesson(page, 1);
   const screen = page.locator('.card-screen');
   const action = page.locator('.action-bar .primary');
@@ -98,18 +113,21 @@ test('figures: stepped frames show one step at a time, and a missing figure is l
   await expect(action).toHaveText('Continue');
 
   await page.goBack();
-  await expect(page.locator('.lessons-screen')).toBeVisible();
+  await expect(page.locator('.start-screen')).toBeVisible();
   await openLesson(page, 2);
   await expect(screen).toHaveAttribute('data-card-id', pack.lessons[1].cards[0].cardId);
   await expect(screen.locator('.prompt')).toBeVisible();
   await expect(screen.locator('.figure')).toHaveCount(0);
 });
 
-test('Back from a lesson returns to the lesson list', async ({ page }) => {
-  await openPack(page, 'pack-bakery.json');
+test('Back from a lesson returns to the start screen', async ({ page }) => {
+  await setUp(page);
   await openLesson(page, 2);
   await expect(page.locator('.card-screen')).toBeVisible();
   await page.goBack();
-  await expect(page.locator('.lessons-screen')).toBeVisible();
+  await expect(page.locator('.start-screen')).toBeVisible();
   await expect(page.locator('.lesson')).toHaveCount(2);
+  // Import and Install also come back to the start screen, which says what was done.
+  await install(page, 'track-bakery.json');
+  await expect(page.locator('.notice')).toHaveText('Track Baker 1.0 installed.');
 });

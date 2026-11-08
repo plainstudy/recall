@@ -40,11 +40,17 @@ const PAGE = [
   './ui/answer-match.js',
   './ui/answer-order.js',
   './ui/card-screen.js',
+  './ui/controller.js',
+  './ui/dialogs.js',
   './ui/dom.js',
   './ui/figure.js',
+  './ui/files.js',
+  './ui/first-run.js',
+  './ui/import-flow.js',
   './ui/platform.js',
+  './ui/player.js',
+  './ui/start-screen.js',
   './ui/storage.js',
-  './ui/viewer.js',
 ];
 
 self.addEventListener('install', (event) => {

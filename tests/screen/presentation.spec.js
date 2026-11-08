@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openLesson, openPack, playCards, playLesson, readFixturePack } from './helpers.js';
+import { openLesson, playCards, playLesson, readFixturePack, setUp } from './helpers.js';
 
 const texts = (page, selector) => page.locator(selector).allTextContents();
 
@@ -22,7 +22,7 @@ test('acceptance test 25: shown again, a card’s lists come in a new order, and
     }
   };
 
-  await openPack(page, 'pack-bakery.json');
+  await setUp(page);
   await openLesson(page, 1);
   await playLesson(page, lesson, 'right', record);
   const first = { ...seen };
@@ -33,6 +33,30 @@ test('acceptance test 25: shown again, a card’s lists come in a new order, and
   expect(seen.left).not.toEqual(first.left);
   expect(seen.right).not.toEqual(first.right);
   expect([...seen.options].sort()).toEqual([...first.options].sort());
+});
+
+test('acceptance test 25 across a reload: the first presentation after it differs from the last one before it', async ({ page }) => {
+  const pack = await readFixturePack('pack-bakery.json');
+  const lesson = pack.lessons[0];
+  const at = lesson.cards.findIndex((c) => c.type === 'mcq');
+  const reachCard = async () => {
+    await openLesson(page, 1);
+    await playCards(page, lesson.cards.slice(0, at), 'right');
+    await expect(page.locator('.card-screen')).toHaveAttribute('data-card-id', lesson.cards[at].cardId);
+    return texts(page, '.card-answers .option');
+  };
+
+  await setUp(page);
+  let last = await reachCard();
+  for (let i = 0; i < 3; i++) {
+    await page.reload();
+    await expect(page.locator('.start-screen')).toBeVisible();
+    await expect(page.locator('.lesson')).toHaveCount(2);
+    const first = await reachCard();
+    expect(first).not.toEqual(last);
+    expect([...first].sort()).toEqual([...last].sort());
+    last = first;
+  }
 });
 
 test('acceptance test 14: a variant card hides its notes until Check, and scores all or nothing', async ({ page }) => {
@@ -48,7 +72,7 @@ test('acceptance test 14: a variant card hides its notes until Check, and scores
     return variant.options.filter((o) => body.includes(o.note)).length;
   };
 
-  await openPack(page, 'pack-bakery.json');
+  await setUp(page);
   await openLesson(page, 2);
   await playCards(page, lesson.cards.slice(0, at), 'right');
   await expect(screen).toHaveAttribute('data-card-id', variant.cardId);

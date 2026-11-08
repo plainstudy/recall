@@ -34,10 +34,73 @@ export function watchErrors(page) {
   return errors;
 }
 
-export async function openPack(page, name) {
+// First run: name and role, then Skip (or stop at the bundle question).
+export async function firstRun(page, { name = 'Sam', role = 'Baker', skip = true } = {}) {
   await page.goto('/');
-  await page.setInputFiles('input[type=file]', fixturePath(name));
-  await expect(page.locator('.lessons-screen')).toBeVisible();
+  await page.getByLabel('Your name').fill(name);
+  await page.getByLabel('Your role').fill(role);
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(page.locator('.first-run-import')).toBeVisible();
+  if (skip) {
+    await page.getByRole('button', { name: 'Skip', exact: true }).click();
+    await expect(page.locator('.start-screen')).toBeVisible();
+  }
+}
+
+// Taps a button that opens the file picker, and picks these files: fixture names, paths,
+// or { name, mimeType, buffer }.
+export async function chooseFile(page, buttonName, file) {
+  const [chooser] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    page.getByRole('button', { name: buttonName, exact: true }).click(),
+  ]);
+  await chooser.setFiles(typeof file === 'string' && !file.includes('/') && !file.includes('\\') ? fixturePath(file) : file);
+}
+
+// Imports a file and installs it, back on the start screen.
+export async function install(page, file, { button = 'Import', confirm = 'Install' } = {}) {
+  await chooseFile(page, button, file);
+  await expect(page.locator('.import-confirm')).toBeVisible();
+  await page.getByRole('button', { name: confirm, exact: true }).click();
+  await expect(page.locator('.start-screen')).toBeVisible();
+}
+
+// A learner with these files installed, on the start screen.
+export async function setUp(page, files = ['glossary.json', 'pack-bakery.json']) {
+  await firstRun(page);
+  for (const file of files) await install(page, file);
+}
+
+// What the phone holds: the stored progress and content, and the mirror. Read without
+// creating anything: a database that isn't there stays absent.
+export function readStored(page) {
+  return page.evaluate(async () => {
+    const scope = new URL('./', location.href).href;
+    const mirrorText = localStorage.getItem(`progress@${scope}`);
+    const names = (await indexedDB.databases()).map((d) => d.name);
+    if (!names.includes(`data@${scope}`)) return { exists: false, progress: null, content: {}, mirror: mirrorText && JSON.parse(mirrorText) };
+    const db = await new Promise((resolve, reject) => {
+      const open = indexedDB.open(`data@${scope}`);
+      open.onsuccess = () => resolve(open.result);
+      open.onerror = () => reject(open.error);
+    });
+    const read = (store, how) =>
+      new Promise((resolve, reject) => {
+        const request = how(db.transaction(store).objectStore(store));
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    const progress = (await read('progress', (s) => s.get('progress'))) || null;
+    const keys = await read('content', (s) => s.getAllKeys());
+    const values = await read('content', (s) => s.getAll());
+    db.close();
+    return {
+      exists: true,
+      progress,
+      content: Object.fromEntries(keys.map((k, i) => [k, values[i]])),
+      mirror: mirrorText && JSON.parse(mirrorText),
+    };
+  });
 }
 
 export async function openLesson(page, number) {
@@ -237,4 +300,44 @@ export function expectCardLayout(m, { allInLowerThird = false } = {}) {
 export function expectNothingWide(m) {
   expect(m.scrollWidth).toBeLessThanOrEqual(m.vw);
   expect(m.wide).toEqual([]);
+}
+
+// Runs in the page: every control on a screen other than a card, in page coordinates.
+function measureControlsInPage() {
+  const doc = document.documentElement;
+  window.scrollTo(0, doc.scrollHeight);
+  const vw = window.innerWidth;
+  const sy = window.scrollY;
+  const controls = [...document.querySelectorAll('#app button, #app input, #app [role="button"]')]
+    .filter((el) => el.getBoundingClientRect().width > 0)
+    .map((el) => {
+      const r = el.getBoundingClientRect();
+      return { text: (el.textContent || el.id || '').trim().slice(0, 30), top: r.top + sy, bottom: r.bottom + sy, left: r.left, right: r.right, width: r.width, height: r.height };
+    });
+  const wide = [...document.querySelectorAll('#app *')]
+    .filter((el) => {
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && (r.right > vw + 0.5 || r.left < -0.5);
+    })
+    .map((el) => el.getAttribute('class') || el.tagName);
+  window.scrollTo(0, 0);
+  return { vw, scrollWidth: doc.scrollWidth, controls, wide };
+}
+
+// On every screen: nothing wider than the phone, and every control at least 48 px with
+// 8 px to its neighbours. Placing them in the lower third is Session 4's.
+export async function expectControlsSized(page) {
+  const m = await page.evaluate(measureControlsInPage);
+  expect(m.scrollWidth).toBeLessThanOrEqual(m.vw);
+  expect(m.wide).toEqual([]);
+  expect(m.controls.length).toBeGreaterThan(0);
+  for (const c of m.controls) {
+    expect(c.height, c.text).toBeGreaterThanOrEqual(47.5);
+    expect(c.width, c.text).toBeGreaterThanOrEqual(47.5);
+  }
+  for (let i = 0; i < m.controls.length; i++) {
+    for (let j = i + 1; j < m.controls.length; j++) {
+      expect(gapBetween(m.controls[i], m.controls[j]), `${m.controls[i].text} / ${m.controls[j].text}`).toBeGreaterThanOrEqual(7.5);
+    }
+  }
 }

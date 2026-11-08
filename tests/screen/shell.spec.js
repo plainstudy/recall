@@ -9,7 +9,7 @@ test('the app opens as Recall, shows its version, and its worker caches the whol
   await expect(page).toHaveTitle('Recall');
   await expect(page.getByRole('heading', { name: 'Recall' })).toBeVisible();
   await expect(page.getByText(`Version ${ENGINE_VERSION}`)).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Open a pack file' })).toBeVisible();
+  await expect(page.getByLabel('Your name')).toBeVisible();
 
   const manifest = await page.evaluate(async () => (await fetch('manifest.webmanifest')).json());
   expect(manifest.name).toBe('Recall');
