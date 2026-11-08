@@ -1,0 +1,593 @@
+{
+  "packId": "bakery_basics",
+  "packVersion": "1.1",
+  "engineMin": "0.2.0",
+  "contentClass": "public",
+  "order": 1,
+  "title": "Bread basics",
+  "subtitle": "Invented test content about bread baking",
+  "authoredOn": "2026-11-09",
+  "fixtureNote": "An unknown field, kept as read.",
+  "figures": {
+    "fig_loaf_section": {
+      "svg": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 400'><rect width='300' height='400' fill='#1b2633'/><path d='M30 330 C30 175 90 100 150 100 C210 100 270 175 270 330 Z' fill='#c8955a'/><path d='M50 322 C52 192 102 124 150 124 C198 124 248 192 250 322 Z' fill='#eedcb8'/><path d='M150 100 L226 52 L238 98 L172 122 Z' fill='#a8743f'/><circle cx='100' cy='230' r='24' fill='#d9c49c' stroke='#b89a6a' stroke-width='3'/><circle cx='205' cy='240' r='9' fill='#d9c49c'/><rect x='30' y='330' width='240' height='26' fill='#7a5330'/></svg>",
+      "alt": "Cross-section of a round loaf: the crust, the ear lifted by the score, a large air pocket, the open crumb and the base."
+    },
+    "fig_shaping_steps": {
+      "frames": [
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 400'><rect width='300' height='400' fill='#1b2633'/><ellipse cx='150' cy='220' rx='100' ry='80' fill='#eedcb8'/></svg>",
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 400'><g fill='none' stroke='#3fb08c' stroke-width='6' stroke-linecap='round'><path d='M60 220 L110 220'/><path d='M240 220 L190 220'/><path d='M150 150 L150 190'/><path d='M150 290 L150 250'/></g></svg>",
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 400'><g fill='none' stroke='#e0a030' stroke-width='6' stroke-linecap='round'><path d='M210 340 L90 340'/><path d='M110 322 L90 340 L110 358'/></g></svg>"
+      ],
+      "alt": "Three steps of shaping a round loaf: the dough, the edges folded to the middle, then a pull across the bench to tighten it."
+    }
+  },
+  "lessons": [
+    {
+      "lessonId": "bk_l01",
+      "order": 1,
+      "title": "Starting a dough",
+      "objective": "Say what raises a dough, and read a simple order.",
+      "estMinutes": 6,
+      "prerequisites": [],
+      "verification": {
+        "status": "verified",
+        "sources": [
+          "Invented for tests."
+        ],
+        "checkedOn": "2026-11-08",
+        "note": "Invented content."
+      },
+      "cards": [
+        {
+          "cardId": "bk_l01_c01",
+          "type": "teach",
+          "prompt": "A dough needs flour, water, salt and something to raise it. A `levain` is a culture of flour and water that a baker keeps and feeds for weeks; a poolish is mixed once, the night before, with a little yeast. Either one makes a loaf taste of more than flour.",
+          "figure": "fig_loaf_section"
+        },
+        {
+          "cardId": "bk_l01_c02",
+          "type": "mcq",
+          "srsKey": "atom.ingredient.levain",
+          "prompt": "Which of these is kept and fed for weeks?",
+          "options": [
+            {
+              "id": "a",
+              "text": "Levain",
+              "correct": true,
+              "termRef": "levain",
+              "feedback": "A levain is fed again and again, so it lasts."
+            },
+            {
+              "id": "b",
+              "text": "Poolish",
+              "correct": false,
+              "termRef": "poolish",
+              "feedback": "A poolish is mixed once, for one bake, and used up."
+            },
+            {
+              "id": "c",
+              "text": "Brine",
+              "correct": false,
+              "feedback": "Brine is salted water; it raises nothing."
+            }
+          ],
+          "feedback": "A kept culture is what makes a levain a levain.",
+          "difficulty": 1,
+          "glossaryRefs": [
+            "levain"
+          ],
+          "authorNote": "An unknown field, kept as read."
+        },
+        {
+          "cardId": "bk_l01_c03",
+          "type": "teach",
+          "prompt": "Shaping a round loaf takes three moves. Fold the edges into the middle. Turn the dough over, seam down. Then pull it across the bench towards you, so the surface tightens.",
+          "figure": "fig_shaping_steps"
+        },
+        {
+          "cardId": "bk_l01_c04",
+          "type": "cloze",
+          "srsKey": "atom.ingredient.hydration",
+          "prompt": "A culture fed `1:1` flour to water by weight is at ___ hydration.",
+          "chips": [
+            {
+              "id": "a",
+              "text": "100%",
+              "correct": true
+            },
+            {
+              "id": "b",
+              "text": "50%",
+              "correct": false
+            },
+            {
+              "id": "c",
+              "text": "75%",
+              "correct": false
+            }
+          ],
+          "feedback": "Hydration is water over flour: equal weights make 100%.",
+          "difficulty": 1,
+          "glossaryRefs": [
+            "levain"
+          ]
+        },
+        {
+          "cardId": "bk_l01_c05",
+          "type": "match",
+          "srsKey": "atom.ingredient.pre-ferments",
+          "prompt": "Match each word to what it names.",
+          "pairs": [
+            {
+              "id": "lv",
+              "left": "Levain",
+              "right": "A culture kept for weeks"
+            },
+            {
+              "id": "pl",
+              "left": "Poolish",
+              "right": "A pre-ferment mixed once"
+            },
+            {
+              "id": "bn",
+              "left": "Banneton",
+              "right": "A basket for the rise"
+            }
+          ],
+          "feedback": "Two ways to raise a dough, and one tool to hold it while it rises.",
+          "difficulty": 1,
+          "glossaryRefs": [
+            "levain",
+            "poolish",
+            "banneton"
+          ]
+        },
+        {
+          "cardId": "bk_l01_c06",
+          "type": "multi",
+          "srsKey": "atom.ingredient.raising-agents",
+          "prompt": "Which of these can raise a dough? Choose every one that can.",
+          "options": [
+            {
+              "id": "a",
+              "text": "Levain",
+              "correct": true,
+              "termRef": "levain"
+            },
+            {
+              "id": "b",
+              "text": "Packet yeast",
+              "correct": true
+            },
+            {
+              "id": "c",
+              "text": "Poolish",
+              "correct": true,
+              "termRef": "poolish"
+            },
+            {
+              "id": "d",
+              "text": "Salt",
+              "correct": false
+            },
+            {
+              "id": "e",
+              "text": "Rye flour",
+              "correct": false
+            }
+          ],
+          "feedback": "Levain, yeast and poolish all carry live yeast. Salt slows it down; rye flour feeds it but raises nothing on its own.",
+          "difficulty": 2,
+          "glossaryRefs": [
+            "levain",
+            "poolish"
+          ]
+        },
+        {
+          "cardId": "bk_l01_c09",
+          "type": "order",
+          "srsKey": "atom.technique.loaf-steps",
+          "prompt": "Put the steps of a simple loaf in order.",
+          "items": [
+            {
+              "id": "shape",
+              "text": "Shape",
+              "position": 3
+            },
+            {
+              "id": "mix",
+              "text": "Mix",
+              "position": 1
+            },
+            {
+              "id": "bake",
+              "text": "Bake",
+              "position": 4
+            },
+            {
+              "id": "rest",
+              "text": "Rest",
+              "position": 2
+            }
+          ],
+          "feedback": "Mix, rest, shape, bake: the dough needs its rest before it can hold a shape.",
+          "difficulty": 1,
+          "glossaryRefs": []
+        },
+        {
+          "cardId": "bk_l01_c07",
+          "type": "mcq",
+          "srsKey": "atom.technique.timing",
+          "prompt": "A bakery mixes its dough at six in the evening and wants loaves on the shelf by seven the next morning. The kitchen is cool overnight, the levain was fed at noon, and the oven takes forty minutes to heat. Which plan gets the loaves out on time without rushing the rise or leaving the dough to over-prove before it goes in?",
+          "options": [
+            {
+              "id": "a",
+              "text": "Shape at five, prove the loaves in the cool kitchen until six, and heat the oven from twenty past five",
+              "correct": true,
+              "feedback": "The rise gets its hour, and the oven is hot when the loaves are ready."
+            },
+            {
+              "id": "b",
+              "text": "Shape at midnight and leave the loaves out on the bench all night, then bake them first thing at six",
+              "correct": false,
+              "feedback": "Six hours on the bench is far too long; the loaves collapse before they bake."
+            },
+            {
+              "id": "c",
+              "text": "Mix again at four in the morning with extra packet yeast, then shape, prove and bake in one hurried run",
+              "correct": false,
+              "feedback": "Starting again throws away the overnight flavour and rushes every step."
+            },
+            {
+              "id": "d",
+              "text": "Bake the dough unshaped at six in the evening and slice the loaves for the shelf on the following morning",
+              "correct": false,
+              "feedback": "Unshaped, unrisen dough bakes into a flat, dense slab."
+            }
+          ],
+          "feedback": "Work back from the shelf time: bake, then prove, then shape, with the oven started early enough to be hot.",
+          "difficulty": 3,
+          "glossaryRefs": [
+            "levain"
+          ]
+        },
+        {
+          "cardId": "bk_l01_c10",
+          "type": "mcq",
+          "srsKey": "atom.ingredient.salt",
+          "prompt": "Which of these slows a levain down when it goes into the dough?",
+          "options": [
+            {
+              "id": "a",
+              "text": "Salt",
+              "correct": true,
+              "feedback": "Salt tightens the dough and slows the culture."
+            },
+            {
+              "id": "b",
+              "text": "Warm water",
+              "correct": false,
+              "feedback": "Warmth speeds a levain up."
+            },
+            {
+              "id": "c",
+              "text": "A spoon of honey",
+              "correct": false,
+              "feedback": "Sugar feeds the culture."
+            }
+          ],
+          "feedback": "Bakers add salt after the first mix for this reason.",
+          "difficulty": 1,
+          "glossaryRefs": [
+            "levain"
+          ]
+        },
+        {
+          "cardId": "bk_l01_c08",
+          "type": "desk",
+          "srsKey": "atom.desk.order-note",
+          "deskRef": true,
+          "prompt": "A customer leaves this note at the counter. What do they want?",
+          "artifact": {
+            "kind": "enquiry",
+            "text": "2 x round sourdough\nSat, ready by 08:00\nsliced pls, no seeds"
+          },
+          "options": [
+            {
+              "id": "a",
+              "text": "Two round sourdough loaves, sliced, without seeds, by eight on Saturday",
+              "correct": true,
+              "feedback": "Everything the note asks for, read in full."
+            },
+            {
+              "id": "b",
+              "text": "Two seeded round loaves, left whole, ready on Saturday morning",
+              "correct": false,
+              "feedback": "The note says no seeds, and asks for the loaves sliced."
+            },
+            {
+              "id": "c",
+              "text": "Round sourdough for two people, with seeds, on Saturday",
+              "correct": false,
+              "feedback": "\"2 x\" counts loaves, not people, and the note rules out seeds."
+            }
+          ],
+          "difficulty": 2,
+          "glossaryRefs": []
+        }
+      ]
+    },
+    {
+      "lessonId": "bk_l02",
+      "order": 2,
+      "title": "At the oven",
+      "objective": "Read the signs of a good bake, and name the tools around the oven.",
+      "estMinutes": 6,
+      "prerequisites": [
+        "bk_l01"
+      ],
+      "verification": {
+        "status": "needs-review",
+        "sources": [
+          "Invented for tests."
+        ],
+        "checkedOn": "2026-11-08",
+        "note": "Invented content, marked for review to test the marker."
+      },
+      "cards": [
+        {
+          "cardId": "bk_l02_c01",
+          "type": "teach",
+          "prompt": "`Oven spring` is the last rise a loaf makes in the first minutes of baking, before the crust sets. A deep score gives that rise somewhere to go: the cut opens and lifts into a flap called the ear.",
+          "figure": "fig_not_in_pack"
+        },
+        {
+          "cardId": "bk_l02_c02",
+          "type": "hotspot",
+          "srsKey": "atom.technique.scoring-ear",
+          "prompt": "Tap the ear: the flap a good score lifts as the loaf springs.",
+          "figure": "fig_loaf_section",
+          "regions": [
+            {
+              "id": "ear",
+              "label": "The ear",
+              "shape": {
+                "polygon": [
+                  140,
+                  40,
+                  240,
+                  40,
+                  245,
+                  110,
+                  160,
+                  130
+                ]
+              },
+              "correct": true,
+              "feedback": "The ear is the edge of the cut, lifted by oven spring."
+            },
+            {
+              "id": "pocket",
+              "label": "A large air pocket",
+              "shape": {
+                "circle": [
+                  100,
+                  230,
+                  32
+                ]
+              },
+              "correct": false,
+              "feedback": "A large pocket is trapped gas, often from loose shaping."
+            },
+            {
+              "id": "crumb",
+              "label": "The crumb",
+              "shape": {
+                "rect": [
+                  160,
+                  180,
+                  80,
+                  90
+                ]
+              },
+              "correct": false,
+              "feedback": "The crumb is the inside; the ear is on the crust."
+            },
+            {
+              "id": "base",
+              "label": "The base",
+              "shape": {
+                "rect": [
+                  30,
+                  316,
+                  240,
+                  54
+                ]
+              },
+              "correct": false,
+              "feedback": "The base sat on the oven floor; nothing lifts there."
+            }
+          ],
+          "feedback": "A clean, lifted ear shows the score was deep enough and the loaf still had spring in it.",
+          "difficulty": 2,
+          "glossaryRefs": [
+            "scoring",
+            "oven-spring"
+          ]
+        },
+        {
+          "cardId": "bk_l02_c03",
+          "type": "match",
+          "srsKey": "atom.tool.bench-tools",
+          "prompt": "Match each tool to its job.",
+          "pairs": [
+            {
+              "left": "Lame",
+              "right": "Cuts the score"
+            },
+            {
+              "left": "Couche",
+              "right": "Holds long loaves"
+            },
+            {
+              "left": "Peel",
+              "right": "Slides loaves into the oven"
+            },
+            {
+              "left": "Bench scraper",
+              "right": "Divides the dough"
+            }
+          ],
+          "feedback": "Four tools, four jobs, from the bench to the oven.",
+          "difficulty": 2,
+          "glossaryRefs": [
+            "couche"
+          ]
+        },
+        {
+          "cardId": "bk_l02_c04",
+          "type": "mcq",
+          "srsKey": "atom.ingredient.poolish",
+          "prompt": "The recipe says to make a poolish tonight. What do you mix?",
+          "options": [
+            {
+              "id": "a",
+              "text": "Flour, water and a little packet yeast",
+              "correct": true,
+              "termRef": "poolish",
+              "feedback": "That is a poolish: mixed once, used in the morning."
+            },
+            {
+              "id": "b",
+              "text": "A spoonful of the kept levain, fed again",
+              "correct": false,
+              "termRef": "levain",
+              "feedback": "That feeds a levain; it doesn't make a poolish."
+            },
+            {
+              "id": "c",
+              "text": "Flour and water alone, left for a week",
+              "correct": false,
+              "termRef": "levain",
+              "feedback": "That starts a new culture, which takes days."
+            }
+          ],
+          "feedback": "Poolish: one night, a little yeast.",
+          "trap": true,
+          "trapFeedback": "A poolish and a levain both raise dough, but one is mixed for a single bake and the other is kept. Swapping them changes the timing of the whole bake.",
+          "difficulty": 2,
+          "glossaryRefs": [
+            "poolish",
+            "levain"
+          ]
+        },
+        {
+          "cardId": "bk_l02_c05",
+          "type": "variant",
+          "srsKey": "atom.tool.banneton",
+          "term": "Banneton",
+          "termRef": "banneton",
+          "prompt": "Which of these names mean the same tool?",
+          "options": [
+            {
+              "id": "a",
+              "text": "Proofing basket",
+              "correct": true,
+              "note": "Kitchen shop usage."
+            },
+            {
+              "id": "b",
+              "text": "Brotform",
+              "correct": true,
+              "note": "The German bakers' word."
+            },
+            {
+              "id": "c",
+              "text": "Couche",
+              "correct": false,
+              "termRef": "couche",
+              "note": "A linen cloth for long loaves, not a basket."
+            },
+            {
+              "id": "d",
+              "text": "Peel",
+              "correct": false,
+              "note": "A paddle for moving loaves."
+            },
+            {
+              "id": "e",
+              "text": "Proving drawer",
+              "correct": false,
+              "note": "A warm cabinet, not a basket."
+            }
+          ],
+          "feedback": "A banneton goes by several names; all of them mean the basket.",
+          "trap": true,
+          "trapFeedback": "A couche shapes long loaves in cloth; a banneton is a basket for round ones. Ordering the wrong one brings the wrong tool to the bench.",
+          "difficulty": 3,
+          "glossaryRefs": [
+            "banneton",
+            "couche"
+          ]
+        },
+        {
+          "cardId": "bk_l02_c07",
+          "type": "desk",
+          "srsKey": "atom.desk.handover",
+          "deskRef": true,
+          "prompt": "The night baker leaves this handover. Which batch needs attention first?",
+          "artifact": {
+            "kind": "report",
+            "text": "Batch 3: under-proved, in the fridge since 03:00\nBatch 4: shaped 05:10, proving at room heat\nOven: at heat since 05:30"
+          },
+          "options": [
+            {
+              "id": "a",
+              "text": "Batch 4, proving warm and nearest its peak",
+              "correct": true,
+              "feedback": "Room heat moves fastest; it peaks before the cold batch does."
+            },
+            {
+              "id": "b",
+              "text": "Batch 3, because it is under-proved",
+              "correct": false,
+              "feedback": "The fridge slows it right down; it can wait."
+            },
+            {
+              "id": "c",
+              "text": "The oven, because it has been on too long",
+              "correct": false,
+              "feedback": "An oven at heat is ready, not at risk."
+            }
+          ],
+          "difficulty": 2,
+          "glossaryRefs": []
+        }
+      ]
+    },
+    {
+      "lessonId": "bk_l03",
+      "order": 3,
+      "title": "An unverified draft",
+      "objective": "Never shown.",
+      "estMinutes": 1,
+      "prerequisites": [
+        "bk_l02"
+      ],
+      "verification": {
+        "status": "unverified",
+        "sources": [],
+        "checkedOn": null,
+        "note": "Unverified, to test that the viewer leaves it out."
+      },
+      "cards": [
+        {
+          "cardId": "bk_l03_c01",
+          "type": "teach",
+          "prompt": "An unverified lesson. The viewer never lists it."
+        }
+      ]
+    }
+  ]
+}
