@@ -1,0 +1,552 @@
+/* Night theme tokens. The day theme and the self-hosted fonts come later. */
+:root {
+  color-scheme: dark;
+  --ink: #0e1620;
+  --panel: #16202c;
+  --rule: #24313f;
+  --text: #d8e0e8;
+  --muted: #8494a4;
+  --running: #3fb08c; /* correct */
+  --slowdown: #e0a030; /* due; needs review */
+  --trip: #c0392b; /* wrong: marks and borders */
+  --trip-text: #e8604f; /* wrong: text */
+  --tap: 48px;
+  --gap: 8px;
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--text);
+  font: 18px/1.45 var(--font);
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 600;
+}
+
+p,
+ul,
+ol {
+  margin: 0;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.94em;
+}
+
+/* Screens: one column, the content at the top, the controls at the bottom. The element
+   marked .push takes the free space above it, so what follows sits at the bottom. */
+.screen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px 16px 0;
+}
+
+.screen > .push {
+  margin-top: auto;
+}
+
+/* Text from content keeps its line breaks and never makes the page wider. */
+.prompt,
+.explanation,
+.artifact,
+.card-term,
+.option-text,
+.lesson-title,
+.pack-title,
+.lesson-heading,
+.lead,
+.notice,
+.summary-line,
+.answer-key,
+.figure-alt {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.lead {
+  margin-bottom: 16px;
+  color: var(--muted);
+}
+
+.version {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.notice {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--slowdown);
+  background: var(--panel);
+}
+
+/* The bar at the bottom: the screen's main button, always in the lower third. */
+.action-bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: var(--gap);
+  margin-top: var(--gap);
+  padding: var(--gap) 0 max(var(--gap), env(safe-area-inset-bottom));
+  background: var(--ink);
+}
+
+.action-bar > button {
+  flex: 1 1 0;
+}
+
+/* Buttons. Every control is at least 48 px in both directions. */
+button {
+  min-width: var(--tap);
+  min-height: var(--tap);
+  margin: 0;
+  padding: 11px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible {
+  outline: 3px solid var(--text);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  color: var(--text);
+  cursor: default;
+}
+
+.primary,
+.secondary {
+  font-weight: 600;
+  text-align: center;
+}
+
+.primary {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--ink);
+}
+
+.primary:disabled {
+  border-color: var(--rule);
+  background: var(--rule);
+  color: var(--muted);
+}
+
+/* Cards */
+.card-place {
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.card-term {
+  margin-bottom: 8px;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.prompt {
+  margin-bottom: 12px;
+}
+
+.artifact {
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--muted);
+  border-radius: 4px;
+  background: var(--panel);
+  font-size: 17px;
+}
+
+.figure {
+  margin: 0 0 12px;
+}
+
+.figure-box {
+  position: relative;
+  width: 100%;
+}
+
+.figure-layer {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.figure-box > .figure-layer + .figure-layer,
+.figure-box-sized > .figure-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.figure-alt {
+  margin: 0 0 12px;
+  padding: 12px;
+  border: 1px dashed var(--rule);
+  color: var(--muted);
+}
+
+.card-answers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding-top: 16px;
+}
+
+.card-result:not(:empty) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding-top: 16px;
+}
+
+/* Answer controls */
+.options,
+.order-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.option,
+.item,
+.match-item,
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.option,
+.item {
+  width: 100%;
+}
+
+.option-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Single choice looks like a radio button, multiple choice like a checkbox. */
+.option::before {
+  content: '';
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--muted);
+  border-radius: 50%;
+}
+
+.options-multiple .option::before {
+  border-radius: 4px;
+}
+
+.option[aria-pressed='true'],
+.item[aria-pressed='true'],
+.chip[aria-pressed='true'],
+.match-item[aria-pressed='true'] {
+  border-color: var(--text);
+}
+
+.option[aria-pressed='true']::before {
+  border-color: var(--text);
+  background: var(--text);
+  box-shadow: inset 0 0 0 3px var(--panel);
+}
+
+.match-item[aria-pressed='true'],
+.chip[aria-pressed='true'] {
+  background: var(--rule);
+}
+
+.option-note {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.pair-mark,
+.slot {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 13px;
+  background: var(--text);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.match {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--gap);
+}
+
+/* Match items are narrow, so the pair mark and the icon flow with the text instead of
+   taking columns of their own, and words break only when they must. */
+.match-item {
+  display: block;
+  padding: 10px 12px;
+}
+
+.match-item .option-text {
+  overflow-wrap: break-word;
+}
+
+.match-item .pair-mark {
+  margin-right: 6px;
+  vertical-align: 1px;
+}
+
+.match-item .icon {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin-left: 6px;
+  vertical-align: -4px;
+}
+
+.match-item.paired {
+  border-color: var(--muted);
+}
+
+.order-divider {
+  width: 100%;
+  margin: 2px 0;
+  border: 0;
+  border-top: 1px dashed var(--rule);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap);
+}
+
+.chip {
+  justify-content: center;
+  text-align: center;
+}
+
+.gap {
+  display: inline-block;
+  min-width: 4.5em;
+  padding: 0 4px;
+  border-bottom: 2px solid var(--muted);
+  font-weight: 600;
+  text-align: center;
+}
+
+.gap-right {
+  border-color: var(--running);
+  color: var(--running);
+}
+
+.gap-wrong {
+  border-color: var(--trip);
+  color: var(--trip-text);
+}
+
+/* Hotspot regions, drawn over the figure. */
+.regions {
+  overflow: visible;
+}
+
+.region {
+  fill: transparent;
+  stroke: var(--muted);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+  vector-effect: non-scaling-stroke;
+  cursor: pointer;
+}
+
+.region:focus {
+  outline: none;
+}
+
+.region:focus-visible {
+  stroke: var(--text);
+  stroke-width: 3;
+}
+
+.region[aria-pressed='true'] {
+  fill: rgba(216, 224, 232, 0.18);
+  stroke: var(--text);
+  stroke-dasharray: none;
+}
+
+.region.region-right {
+  fill: rgba(63, 176, 140, 0.25);
+  stroke: var(--running);
+  stroke-dasharray: none;
+}
+
+.region.region-wrong {
+  fill: rgba(192, 57, 43, 0.25);
+  stroke: var(--trip);
+  stroke-dasharray: none;
+}
+
+/* Marks after Check: colour and an icon together. */
+.mark-right {
+  border-color: var(--running);
+}
+
+.mark-missed {
+  border-color: var(--running);
+  border-style: dashed;
+}
+
+.mark-wrong {
+  border-color: var(--trip);
+}
+
+.icon {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-left: auto;
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icon-right {
+  stroke: var(--running);
+}
+
+.icon-wrong {
+  stroke: var(--trip-text);
+}
+
+.verdict {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.verdict .icon,
+.key-line .icon {
+  margin-left: 0;
+}
+
+.verdict-right {
+  color: var(--running);
+}
+
+.verdict-wrong {
+  color: var(--trip-text);
+}
+
+.answer-key {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.answer-key-title {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.answer-key-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 1.4em;
+}
+
+ul.answer-key-list {
+  padding-left: 0;
+  list-style: none;
+}
+
+.key-line {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+}
+
+/* Lessons and summary */
+.lesson-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding-top: 16px;
+}
+
+.lesson {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+}
+
+.lesson-number {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.lesson-title {
+  font-weight: 600;
+}
+
+.lesson-marker {
+  color: var(--slowdown);
+  font-size: 15px;
+}
+
+.summary-line {
+  font-size: 20px;
+}

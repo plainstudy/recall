@@ -1,24 +1,20 @@
-// The test page: four lines that show whether install and offline use work.
+// Start-up: the pack viewer, with the browser's random source and clock, and the service
+// worker, registered under the engine version so a new version is a new worker.
+import { cryptoRandom, systemClock } from './ui/platform.js';
+import { startViewer } from './ui/viewer.js';
 import { ENGINE_VERSION } from './version.js';
 
-const show = (id, text) => {
-  document.getElementById(id).textContent = text;
-};
+const root = document.getElementById('app');
 
-const standalone = window.matchMedia('(display-mode: standalone)');
-const showInstalled = () =>
-  show('installed', standalone.matches || window.navigator.standalone === true ? 'yes' : 'no');
-const showNetwork = () => show('network', navigator.onLine ? 'online' : 'offline');
+try {
+  startViewer(root, { version: ENGINE_VERSION, random: cryptoRandom(), clock: systemClock });
+} catch {
+  const message = document.createElement('p');
+  message.className = 'notice';
+  message.textContent = 'The app could not start. Close it fully and open it again.';
+  root.replaceChildren(message);
+}
 
-show('version', ENGINE_VERSION);
-showInstalled();
-showNetwork();
-standalone.addEventListener('change', showInstalled);
-window.addEventListener('online', showNetwork);
-window.addEventListener('offline', showNetwork);
-
-show('worker', 'no');
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register(`./sw.js?v=${ENGINE_VERSION}`).catch(() => show('worker', 'no'));
-  navigator.serviceWorker.ready.then(() => show('worker', 'yes'));
+  navigator.serviceWorker.register(`./sw.js?v=${ENGINE_VERSION}`).catch(() => {});
 }

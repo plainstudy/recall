@@ -1,27 +1,47 @@
-// The service worker. On install it caches the page under a cache named for the engine
-// version and this worker's scope; on activate it deletes its older caches for the same
-// scope, leaving other sites on the origin alone. It answers from the network when it
-// can and from the cache when it cannot.
+// The service worker. On install it caches the app's shell under a cache named for the
+// engine version and this worker's scope, fetching each file past the HTTP cache so two
+// versions never mix. On activate it deletes its older caches for the same scope, leaving
+// other sites on the origin alone. It answers from the network when it can and from the
+// cache when it cannot.
 const VERSION = new URL(self.location.href).searchParams.get('v') || 'unversioned';
 const SCOPE = self.registration.scope;
 const PREFIX = 'engine-';
 const CACHE = `${PREFIX}${VERSION}@${SCOPE}`;
+
+// Every file the app loads. A unit test fails if one is missing or doesn't exist.
 const PAGE = [
   './',
   './index.html',
+  './styles.css',
   './app.js',
   './version.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
+  './engine/cards.js',
+  './engine/option-order.js',
+  './engine/presentations.js',
+  './engine/random.js',
+  './engine/scoring.js',
+  './engine/text.js',
+  './ui/answer-choice.js',
+  './ui/answer-cloze.js',
+  './ui/answer-hotspot.js',
+  './ui/answer-match.js',
+  './ui/answer-order.js',
+  './ui/card-screen.js',
+  './ui/dom.js',
+  './ui/figure.js',
+  './ui/platform.js',
+  './ui/viewer.js',
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(CACHE)
-      .then((cache) => cache.addAll(PAGE))
+      .then((cache) => cache.addAll(PAGE.map((path) => new Request(path, { cache: 'reload' }))))
       .then(() => self.skipWaiting()),
   );
 });

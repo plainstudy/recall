@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Phase 0",
-  "short_name": "Phase 0",
+  "name": "Recall",
+  "short_name": "Recall",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
