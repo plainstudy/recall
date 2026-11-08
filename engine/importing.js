@@ -9,7 +9,7 @@ import { longDate, stampDay, instantOf } from './days.js';
 import { changesText, glossaryChanges } from './glossary.js';
 import { positionAfterUpdate } from './lessons.js';
 import { checkProgress, installedFrom, PROGRESS_MESSAGES, stamped } from './progress.js';
-import { checkFile, problemText } from './validate.js';
+import { checkFile, newerInstalled, problemText } from './validate.js';
 import { compareVersions } from './versions.js';
 
 export const emptyContent = () => ({ bundle: null, glossary: null, track: null, packs: {} });
@@ -101,26 +101,42 @@ function planBundle(bundle, content) {
   const next = { ...content, bundle: details, packs: { ...content.packs } };
   const parts = [];
 
+  // A part older than the one installed is not installed: the newer one stays.
+  const keptGlossary = newerInstalled('glossary', bundle.glossary, content);
   const sameGlossary = content.glossary && compareVersions(bundle.glossary.glossaryVersion, content.glossary.glossaryVersion) === 0;
-  parts.push(`glossary ${glossaryLine(bundle.glossary, content.glossary)}`);
-  if (!sameGlossary) {
-    next.glossary = bundle.glossary;
-    put.push([CONTENT_KEYS.glossary, bundle.glossary]);
+  if (keptGlossary) {
+    parts.push(`glossary ${keptGlossary.glossaryVersion} kept, newer than the bundle's ${bundle.glossary.glossaryVersion}`);
+  } else {
+    parts.push(`glossary ${glossaryLine(bundle.glossary, content.glossary)}`);
+    if (!sameGlossary) {
+      next.glossary = bundle.glossary;
+      put.push([CONTENT_KEYS.glossary, bundle.glossary]);
+    }
   }
   for (const pack of bundle.packs) {
     const before = content.packs[pack.packId] || null;
+    const kept = newerInstalled('pack', pack, content);
+    if (kept) {
+      parts.push(`pack ${packName(kept)} ${kept.packVersion} kept, newer than the bundle's ${pack.packVersion}`);
+      continue;
+    }
     parts.push(`pack ${packLine(pack, before)}`);
     if (!before || compareVersions(pack.packVersion, before.packVersion) !== 0) {
       next.packs[pack.packId] = pack;
       put.push([CONTENT_KEYS.pack(pack.packId), pack]);
     }
   }
+  const keptTrack = newerInstalled('track', bundle.track, content);
   const sameTrack =
     content.track && content.track.trackId === bundle.track.trackId && compareVersions(bundle.track.trackVersion, content.track.trackVersion) === 0;
-  parts.push(`track ${trackLine(bundle.track, content.track)}`);
-  if (!sameTrack) {
-    next.track = bundle.track;
-    put.push([CONTENT_KEYS.track, bundle.track]);
+  if (keptTrack) {
+    parts.push(`track ${keptTrack.title} ${keptTrack.trackVersion} kept, newer than the bundle's ${bundle.track.trackVersion}`);
+  } else {
+    parts.push(`track ${trackLine(bundle.track, content.track)}`);
+    if (!sameTrack) {
+      next.track = bundle.track;
+      put.push([CONTENT_KEYS.track, bundle.track]);
+    }
   }
 
   const lines = [`Bundle ${bundle.title} ${bundle.bundleVersion}: ${parts.join('; ')}.`];

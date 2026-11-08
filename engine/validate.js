@@ -152,17 +152,27 @@ function installedTwin(kind, data, installed) {
   return null;
 }
 
-// null when the version may go ahead; otherwise the one message. `sameIsFine` lets a part
-// of a bundle arrive unchanged.
-function versionProblem(kind, noun, data, installed, sameIsFine) {
+// null when the version may go ahead; otherwise the one message. A part of a bundle may
+// arrive at the same version or an older one (`inBundle`): see newerInstalled.
+function versionProblem(kind, noun, data, installed, inBundle = false) {
   const field = VERSION_FIELD[kind];
   if (!isContentVersion(data[field])) return MESSAGES.badVersion(noun);
   const twin = installedTwin(kind, data, installed);
-  if (!twin || !isContentVersion(twin[field])) return null;
+  if (!twin || !isContentVersion(twin[field]) || inBundle) return null;
   const order = compareVersions(data[field], twin[field]);
   if (order < 0) return MESSAGES.older(noun, data[field], twin[field]);
-  if (order === 0 && !sameIsFine) return MESSAGES.alreadyInstalled(noun, data[field]);
+  if (order === 0) return MESSAGES.alreadyInstalled(noun, data[field]);
   return null;
+}
+
+// The installed glossary, pack or track when it is newer than a bundle's own copy of it,
+// or null. The bundle then keeps the newer one on the phone and installs the rest, so a
+// glossary update that arrived before the bundle never blocks it.
+export function newerInstalled(kind, data, installed) {
+  const field = VERSION_FIELD[kind];
+  const twin = installedTwin(kind, data, installed);
+  if (!twin || !isContentVersion(twin[field]) || !isContentVersion(data[field])) return null;
+  return compareVersions(data[field], twin[field]) < 0 ? twin : null;
 }
 
 // ------------------------------------------------------------------------------ figures
@@ -618,7 +628,8 @@ export function checkBundle(bundle, ctx) {
     const problem = engineProblem(`bundle's ${noun}`, data, engineVersion);
     if (problem) return stopped(problem);
   }
-  // 3. Versions. The same bundle again is already installed unless a part has gone.
+  // 3. Versions. The same bundle again is already installed unless a part has gone. Its
+  // parts may be older than what is installed: the newer ones stay (newerInstalled).
   if (!isContentVersion(bundle.bundleVersion)) return stopped(MESSAGES.badVersion('bundle'));
   const twin = installed.bundle && installed.bundle.bundleId === bundle.bundleId ? installed.bundle : null;
   if (twin && isContentVersion(twin.bundleVersion)) {
@@ -656,14 +667,21 @@ export function checkBundle(bundle, ctx) {
     }
   }
 
-  const glossary = isObject(bundle.glossary) && Object.hasOwn(bundle.glossary, 'glossaryVersion') ? bundle.glossary : installed.glossary;
-  const keptPacks = installedPacks(installed).filter((p) => !bundlePackIds.has(p.packId));
-  if (glossary === bundle.glossary) {
-    glossaryProblems(bundle.glossary, collectInto(c, 'glossary'), { installedGlossary: installed.glossary, keptPacks });
-  }
+  // What the phone will hold afterwards: the bundle's parts, except where a newer one is
+  // already installed, which stays. Every part is still checked in itself.
+  const bundleGlossary = isObject(bundle.glossary) && Object.hasOwn(bundle.glossary, 'glossaryVersion') ? bundle.glossary : null;
+  const keptGlossary = bundleGlossary ? newerInstalled('glossary', bundleGlossary, installed) : null;
+  const glossary = keptGlossary || bundleGlossary || installed.glossary;
   const allBundlePacks = packs.filter((p) => isObject(p) && Object.hasOwn(p, 'packId'));
+  const incoming = allBundlePacks.filter((p) => !newerInstalled('pack', p, installed));
+  const incomingIds = new Set(incoming.map((p) => p.packId));
+  const keptPacks = installedPacks(installed).filter((p) => !incomingIds.has(p.packId));
+  if (bundleGlossary) {
+    const against = keptGlossary ? { installedGlossary: null, keptPacks: [] } : { installedGlossary: installed.glossary, keptPacks };
+    glossaryProblems(bundleGlossary, collectInto(c, 'glossary'), against);
+  }
   for (const pack of allBundlePacks) {
-    const others = [...keptPacks, ...allBundlePacks.filter((p) => p !== pack)];
+    const others = incoming.includes(pack) ? [...keptPacks, ...incoming.filter((p) => p !== pack)] : [];
     packProblems(pack, collectInto(c, `pack ${pack.packId}`), { glossary, otherPacks: others });
   }
   if (isObject(bundle.track) && Object.hasOwn(bundle.track, 'trackId')) trackProblems(bundle.track, collectInto(c, 'track'));

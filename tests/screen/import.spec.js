@@ -55,6 +55,22 @@ test('a pack is imported after its glossary; a malformed one, or one needing a n
   expect(errors).toEqual([]);
 });
 
+test('a bundle imported after a newer glossary keeps that glossary and installs the rest', async ({ page }) => {
+  await firstRun(page);
+  await install(page, 'glossary-next.json');
+  await chooseFile(page, 'Import', 'bundle-bakery.json');
+  await expect(page.locator('.change-line')).toHaveText([
+    "Bundle Bakery School 1.0: glossary 1.2 kept, newer than the bundle's 1.1; pack Bread basics 1.0, new; track Baker 1.0, new.",
+  ]);
+  await page.getByRole('button', { name: 'Install', exact: true }).click();
+  await expect(page.locator('.app-title')).toHaveText('Bakery School');
+  await expect(page.locator('.lesson')).toHaveCount(2);
+  await expect(page.locator('.installed-name')).toHaveText(['Bundle Bakery School 1.0', 'Track Baker 1.0', 'Glossary 1.2', 'Pack Bread basics 1.0']);
+  const stored = await readStored(page);
+  expect(stored.content.glossary.glossaryVersion).toBe('1.2');
+  expect(stored.progress.installed.glossaryVersion).toBe('1.2');
+});
+
 test('Cancel leaves everything as it was', async ({ page }) => {
   await firstRun(page);
   await chooseFile(page, 'Import', 'bundle-bakery.json');

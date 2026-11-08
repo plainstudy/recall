@@ -140,6 +140,37 @@ test('the same bundle brings back a pack that was removed; Remove keeps progress
   assert.equal(currentLessonId(lessonOrder(back.state.content), back.state.progress.position), 'bk_l02');
 });
 
+test('a bundle keeps a newer glossary, pack or track already on the phone, and installs the rest', () => {
+  const clock = clockAt('2026-11-15T07:14:00+03:00');
+  // The glossary update arrived before the bundle.
+  let { state } = install(freshPhone(clock), 'glossary-next.json', clock);
+  const bundle = install(state, 'bundle-bakery.json', clock);
+  assert.deepEqual(bundle.plan.lines, [
+    "Bundle Bakery School 1.0: glossary 1.2 kept, newer than the bundle's 1.1; pack Bread basics 1.0, new; track Baker 1.0, new.",
+  ]);
+  assert.deepEqual(bundle.plan.writes.put.map(([key]) => key), ['bundle', 'pack:bakery_basics', 'track']);
+  assert.equal(bundle.state.content.glossary.glossaryVersion, '1.2');
+  assert.equal(bundle.state.progress.installed.glossaryVersion, '1.2');
+  assert.deepEqual(lessonOrder(bundle.state.content).lessons.map((e) => e.lesson.lessonId), ['bk_l01', 'bk_l02']);
+
+  // A newer pack and a newer track already installed stay as well.
+  ({ state } = install(freshPhone(clock), 'glossary.json', clock));
+  ({ state } = install(state, 'pack-bakery-next.json', clock));
+  const newerTrack = { ...fixture('track-bakery.json'), trackVersion: '1.1' };
+  const withTrack = planImport({ kind: 'track', data: newerTrack }, { ...state, engineVersion: ENGINE });
+  state = { content: withTrack.nextContent, progress: progressAfter(state.progress, withTrack.nextContent, clock, ENGINE) };
+  const again = install(state, 'bundle-bakery.json', clock);
+  assert.deepEqual(again.plan.lines, [
+    "Bundle Bakery School 1.0: glossary unchanged; pack Bread basics 1.1 kept, newer than the bundle's 1.0; track Baker 1.1 kept, newer than the bundle's 1.0.",
+  ]);
+  assert.deepEqual(again.plan.writes.put.map(([key]) => key), ['bundle']);
+  assert.equal(again.state.content.packs.bakery_basics.packVersion, '1.1');
+  assert.equal(again.state.progress.installed.trackVersion, '1.1');
+  // A glossary on its own, older than the installed one, is still refused (test 30).
+  const older = planImport(recognise(fixtureText('glossary.json')), { ...bundle.state, engineVersion: ENGINE });
+  assert.equal(older.message, MESSAGES.older('glossary', '1.1', '1.2'));
+});
+
 test('a pack on its own needs the glossary installed first', () => {
   const clock = clockAt('2026-11-15T07:14:00+03:00');
   const phone = freshPhone(clock);

@@ -97,11 +97,28 @@ test('the same bundle again is already installed, unless one of its parts has go
   const older = fixture('bundle-bakery.json');
   older.bundleVersion = '0.9';
   expectStop(checkFile('bundle', older, ctxFor(full)), MESSAGES.older('bundle', '0.9', '1.0'));
-  // A part older than the one installed refuses the whole bundle; the same version is fine.
+  // A part older than the one installed is no refusal: the newer one stays. The same
+  // version is fine too.
   const newerGlossary = installedWith({ glossary: fixture('glossary-next.json') });
-  expectStop(checkFile('bundle', fixture('bundle-bakery.json'), ctxFor(newerGlossary)), MESSAGES.older("bundle's glossary", '1.1', '1.2'));
+  assert.equal(checkFile('bundle', fixture('bundle-bakery.json'), ctxFor(newerGlossary)).ok, true);
   const sameGlossary = installedWith({ glossary: glossary() });
   assert.equal(checkFile('bundle', fixture('bundle-bakery.json'), ctxFor(sameGlossary)).ok, true);
+  const newerPack = installedWith({ glossary: glossary(), packs: [fixture('pack-bakery-next.json')] });
+  assert.equal(checkFile('bundle', fixture('bundle-bakery.json'), ctxFor(newerPack)).ok, true);
+});
+
+test("a bundle kept with a newer glossary still refuses what doesn't fit it", () => {
+  // A newer glossary that, unusually, lacks a term the bundle's pack names.
+  const newer = fixture('glossary-next.json');
+  newer.terms = newer.terms.filter((t) => t.id !== 'scoring');
+  newer.terms.forEach((t) => (t.relatedIds = (t.relatedIds || []).filter((id) => id !== 'scoring')));
+  const result = checkFile('bundle', fixture('bundle-bakery.json'), ctxFor(installedWith({ glossary: newer })));
+  expectProblem(result, 'pack bakery_basics, card bk_l02_c06', MESSAGES.unknownTerm('scoring'));
+  // A broken part is refused even when a newer one is installed.
+  const broken = fixture('bundle-bakery.json');
+  broken.glossary.terms[0].domain = 'brewing';
+  const kept = checkFile('bundle', broken, ctxFor(installedWith({ glossary: fixture('glossary-next.json') })));
+  expectProblem(kept, 'glossary, term levain', MESSAGES.unknownRef('domain', 'brewing'));
 });
 
 // [what is wrong, how to make it so, the item named, the message]
