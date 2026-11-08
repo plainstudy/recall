@@ -1,14 +1,20 @@
 {
-  "glossaryVersion": "1.0",
+  "glossaryVersion": "1.1",
+  "engineMin": "0.2.0",
   "authoredOn": "2026-11-08",
   "note": "Invented test content about bread baking. It is not a real glossary.",
   "domains": [
     { "id": "bread-baking", "name": "Bread baking" }
   ],
   "families": [
-    { "id": "leavening", "domain": "bread-baking", "name": "Leavening" },
-    { "id": "shaping", "domain": "bread-baking", "name": "Shaping" },
-    { "id": "oven-work", "domain": "bread-baking", "name": "Oven work" }
+    { "id": "leavening", "domain": "bread-baking", "name": "Leavening", "varianceRequired": true },
+    { "id": "shaping", "domain": "bread-baking", "name": "Shaping", "varianceRequired": true },
+    { "id": "oven-work", "domain": "bread-baking", "name": "Oven work", "varianceRequired": false }
+  ],
+  "categories": [
+    { "id": "ingredient", "name": "Ingredient" },
+    { "id": "tool", "name": "Tool" },
+    { "id": "technique", "name": "Technique" }
   ],
   "terms": [
     {
@@ -22,11 +28,11 @@
       "family": "leavening",
       "status": "active",
       "addedIn": "1.0",
-      "changedIn": null,
+      "changedIn": "1.1",
       "deskRelevant": false,
       "relatedIds": ["poolish"],
       "variants": [{ "term": "Sourdough starter", "usedBy": "Home bakers", "note": null }],
-      "notTheSameAs": [{ "term": "Poolish", "why": "A one-off pre-ferment made with packet yeast, not a kept culture." }],
+      "notTheSameAs": [{ "term": "Poolish", "why": "A one-off pre-ferment made with packet yeast, not a kept culture.", "termId": "poolish" }],
       "verification": "verified",
       "sources": ["Invented for tests."]
     },
@@ -41,11 +47,11 @@
       "family": "leavening",
       "status": "active",
       "addedIn": "1.0",
-      "changedIn": null,
+      "changedIn": "1.1",
       "deskRelevant": false,
       "relatedIds": ["levain"],
       "variants": [],
-      "notTheSameAs": [{ "term": "Levain", "why": "A kept culture, fed for weeks, not mixed fresh for one bake." }],
+      "notTheSameAs": [{ "term": "Levain", "why": "A kept culture, fed for weeks, not mixed fresh for one bake.", "termId": "levain" }],
       "verification": "verified",
       "sources": ["Invented for tests."]
     },
@@ -60,11 +66,14 @@
       "family": "shaping",
       "status": "active",
       "addedIn": "1.0",
-      "changedIn": null,
+      "changedIn": "1.1",
       "deskRelevant": true,
       "relatedIds": ["couche"],
-      "variants": [{ "term": "Proofing basket", "usedBy": "Kitchen shops", "note": null }],
-      "notTheSameAs": [{ "term": "Couche", "why": "A heavy linen cloth for long loaves, not a basket." }],
+      "variants": [
+        { "term": "Proofing basket", "usedBy": "Kitchen shops", "note": null },
+        { "term": "Brotform", "usedBy": "German bakers", "note": null }
+      ],
+      "notTheSameAs": [{ "term": "Couche", "why": "A heavy linen cloth for long loaves, not a basket.", "termId": "couche" }],
       "verification": "verified",
       "sources": ["Invented for tests."]
     },
@@ -79,11 +88,14 @@
       "family": "shaping",
       "status": "active",
       "addedIn": "1.0",
-      "changedIn": null,
+      "changedIn": "1.1",
       "deskRelevant": true,
       "relatedIds": ["banneton"],
       "variants": [],
-      "notTheSameAs": [{ "term": "Banneton", "why": "A basket for round loaves." }],
+      "notTheSameAs": [
+        { "term": "Banneton", "why": "A basket for round loaves.", "termId": "banneton" },
+        { "term": "Tea towel", "why": "Too thin to hold a loaf's shape.", "termId": null }
+      ],
       "verification": "verified",
       "sources": ["Invented for tests."]
     },

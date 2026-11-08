@@ -1,0 +1,128 @@
+{
+  "packId": "bakery_old_shape",
+  "packVersion": "1.0",
+  "engineMin": "1.1",
+  "order": 2,
+  "title": "Bread basics in the older shape",
+  "subtitle": "Invented test content, written the way older packs were",
+  "authoredOn": "2026-11-08",
+  "lessons": [
+    {
+      "lessonId": "bo_l01",
+      "order": 1,
+      "title": "Proving and baking",
+      "objective": "Tell when a loaf is ready for the oven.",
+      "estMinutes": 5,
+      "prerequisites": [],
+      "verification": { "status": "verified", "sources": ["Invented for tests."], "checkedOn": "2026-11-08", "note": "Invented content." },
+      "cards": [
+        {
+          "cardId": "bo_l01_c01",
+          "type": "teach",
+          "prompt": "Proving is the last rise, after shaping and before baking. A loaf that has proved enough holds a fingertip dent for a moment, then slowly fills it.",
+          "figure": "fig_proving_table"
+        },
+        {
+          "cardId": "bo_l01_c02",
+          "type": "mcq",
+          "srsKey": "atom.technique.proving",
+          "prompt": "What is proving?",
+          "options": [
+            { "id": "a", "text": "The last rise before baking", "correct": true, "feedback": "Shaped, then proved, then baked." },
+            { "id": "b", "text": "The first mix of flour and water", "correct": false, "feedback": "That is mixing, which comes first." },
+            { "id": "c", "text": "Cooling the loaf after baking", "correct": false, "feedback": "Cooling comes after; proving comes before the oven." }
+          ],
+          "difficulty": 1,
+          "glossaryRefs": [],
+          "feedback": "Proving sets how open the crumb will be."
+        },
+        {
+          "cardId": "bo_l01_c03",
+          "type": "cloze",
+          "srsKey": "atom.technique.oven-spring",
+          "prompt": "The rise in the first minutes of baking is called oven ___.",
+          "chips": [
+            { "id": "a", "text": "spring", "correct": true },
+            { "id": "b", "text": "lift", "correct": false },
+            { "id": "c", "text": "bloom", "correct": false }
+          ],
+          "feedback": "Oven spring ends when the crust sets.",
+          "difficulty": 1,
+          "glossaryRefs": ["oven-spring"]
+        },
+        {
+          "cardId": "bo_l01_c04",
+          "type": "match",
+          "srsKey": "atom.tool.proving-tools",
+          "prompt": "Match each tool to the loaf it holds.",
+          "pairs": [
+            { "left": "Banneton", "right": "A round loaf" },
+            { "left": "Couche", "right": "Long loaves" },
+            { "left": "Loaf tin", "right": "A sandwich loaf" }
+          ],
+          "difficulty": 2,
+          "glossaryRefs": ["banneton", "couche"]
+        },
+        {
+          "cardId": "bo_l01_c05",
+          "type": "multi",
+          "srsKey": "atom.technique.proving-signs",
+          "prompt": "Which of these show a loaf is ready to bake?",
+          "options": [
+            { "id": "a", "text": "A fingertip dent fills back slowly", "correct": true },
+            { "id": "b", "text": "It has grown by about half", "correct": true },
+            { "id": "c", "text": "It has sunk at the top", "correct": false },
+            { "id": "d", "text": "It feels firm and tight", "correct": false }
+          ],
+          "feedback": "A slow-filling dent and a rise of about half: ready. Sunk means it went too far; firm means not far enough.",
+          "difficulty": 2,
+          "glossaryRefs": []
+        },
+        {
+          "cardId": "bo_l01_c06",
+          "type": "order",
+          "srsKey": "atom.technique.bake-steps",
+          "prompt": "Put these in order, from basket to oven.",
+          "items": [
+            { "id": "a", "text": "Score the top", "position": 2 },
+            { "id": "b", "text": "Load the oven", "position": 3 },
+            { "id": "c", "text": "Turn out of the basket", "position": 1 }
+          ],
+          "feedback": "Out of the basket, scored, then straight into the oven.",
+          "difficulty": 2,
+          "glossaryRefs": ["scoring"]
+        },
+        {
+          "cardId": "bo_l01_c07",
+          "type": "variant",
+          "srsKey": "atom.technique.scoring-names",
+          "term": "Scoring",
+          "prompt": "Which of these names mean the same thing?",
+          "options": [
+            { "id": "a", "text": "Slashing", "correct": true, "note": "Recipe-book usage." },
+            { "id": "b", "text": "Cutting the top", "correct": true, "note": "A plain description." },
+            { "id": "c", "text": "Docking", "correct": false, "note": "Pricking holes, mostly in crackers." },
+            { "id": "d", "text": "Glazing", "correct": false, "note": "Brushing the top with egg or milk." }
+          ],
+          "feedback": "Scoring and slashing are the same cut.",
+          "difficulty": 2,
+          "glossaryRefs": ["scoring"]
+        },
+        {
+          "cardId": "bo_l01_c08",
+          "type": "desk",
+          "srsKey": "atom.desk.oven-note",
+          "deskRef": true,
+          "prompt": "The oven log reads:\n\"Deck 2 slow to heat, 40 min\"\nThe first loaves are shaped and proving. What do you do?",
+          "options": [
+            { "id": "a", "text": "Heat the oven now, and slow the proving in the cool room", "correct": true, "feedback": "The oven needs its forty minutes; the cool room buys them." },
+            { "id": "b", "text": "Bake the loaves in deck 2 straight away", "correct": false, "feedback": "A cold deck gives a pale, flat loaf." },
+            { "id": "c", "text": "Leave the loaves, and heat the oven once they are ready", "correct": false, "feedback": "By the time the oven is hot, the loaves are over-proved." }
+          ],
+          "difficulty": 3,
+          "glossaryRefs": []
+        }
+      ]
+    }
+  ]
+}
