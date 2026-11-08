@@ -13,4 +13,8 @@ export function cryptoRandom() {
   });
 }
 
-export const systemClock = { now: () => Date.now() };
+// The time now, and the phone's offset from UTC at a given moment, in minutes east.
+export const systemClock = {
+  now: () => Date.now(),
+  offsetMinutes: (ms) => -new Date(ms).getTimezoneOffset(),
+};
