@@ -1,9 +1,10 @@
 // The weekly report (spec §3.10): Markdown a person can read and another model can work
 // from, ending in the full progress, which restores the learner on any phone.
 
+import { catalogueOf } from './catalogue.js';
 import { addDays, daysBetween, learnerDay, stampText } from './days.js';
 import { termById } from './glossary.js';
-import { currentLessonId, lessonOrder } from './lessons.js';
+import { currentLessonId } from './lessons.js';
 import { stamped } from './progress.js';
 
 const MAX_PERIOD_DAYS = 28;
@@ -115,26 +116,12 @@ function confusionsSection(progress, glossary) {
     .slice(0, 5);
   return [
     '## Top confusions',
-    ...(top.length > 0 ? table(['Correct term', 'Taken for', 'Times'], top.map((c) => [name(c.pair[0]), name(c.pair[1]), c.count])) : ['None recorded.']),
+    // Pairs have no direction, so neither column is "the right one".
+    ...(top.length > 0 ? table(['Term', 'Confused with', 'Times'], top.map((c) => [name(c.pair[0]), name(c.pair[1]), c.count])) : ['None recorded.']),
   ];
 }
 
-// Every card on the phone, with its lesson, by card id and by atom.
-function cardIndex(content) {
-  const byId = new Map();
-  const byAtom = new Map();
-  for (const entry of lessonOrder({ track: null, packs: content.packs || {} }).lessons) {
-    for (const card of entry.lesson.cards) {
-      const where = { card, lesson: entry.lesson };
-      byId.set(card.cardId, where);
-      if (card.srsKey && !byAtom.has(card.srsKey)) byAtom.set(card.srsKey, where);
-    }
-  }
-  return { byId, byAtom };
-}
-
-function failingSection(progress, content, today) {
-  const index = cardIndex(content);
+function failingSection(progress, catalogue, today) {
   const rows = Object.entries(progress.atoms)
     .filter(
       ([, a]) =>
@@ -146,8 +133,9 @@ function failingSection(progress, content, today) {
     .sort((x, y) => (y[1].totalWrong || 0) - (x[1].totalWrong || 0) || x[0].localeCompare(y[0]))
     .slice(0, 10)
     .map(([key, a]) => {
-      const where = (a.lastMissedCardId && index.byId.get(a.lastMissedCardId)) || index.byAtom.get(key);
-      return [key, where ? `${where.lesson.title} (${where.lesson.lessonId})` : '', a.totalWrong, where ? where.card.cardId : ''];
+      const where = (a.lastMissedCardId && catalogue.cards.get(a.lastMissedCardId)) || (catalogue.atoms.get(key) || [])[0];
+      const lesson = where ? catalogue.lessons.get(where.lessonId).lesson : null;
+      return [key, lesson ? `${lesson.title} (${lesson.lessonId})` : '', a.totalWrong, where ? where.card.cardId : ''];
     });
   return ['## Failing atoms', ...(rows.length > 0 ? table(['Atom', 'Lesson', 'Wrong', 'A card that tests it'], rows) : ['None.'])];
 }
@@ -157,8 +145,7 @@ function requestsSection(progress) {
   return ['## Requested terms', ...(open.length > 0 ? open.map((r) => `- "${line(r.text)}", ${r.on}`) : ['None.'])];
 }
 
-function positionSection(progress, content) {
-  const order = lessonOrder(content);
+function positionSection(progress, content, order) {
   const n = order.lessons.length;
   let text;
   if (n === 0) text = 'No lessons installed.';
@@ -188,6 +175,7 @@ function fenceFor(text) {
 // what the phone keeps once the report has been saved.
 export function buildReport(progress, content, clock, engineVersion) {
   const today = learnerDay(clock);
+  const catalogue = catalogueOf(content);
   const period = reportPeriod(progress, today);
   const marked = stamped(withReportMarks(progress, today), clock, engineVersion);
   const installed = progress.installed;
@@ -207,11 +195,11 @@ export function buildReport(progress, content, clock, engineVersion) {
     '',
     ...confusionsSection(progress, content.glossary),
     '',
-    ...failingSection(progress, content, today),
+    ...failingSection(progress, catalogue, today),
     '',
     ...requestsSection(progress),
     '',
-    ...positionSection(progress, content),
+    ...positionSection(progress, content, catalogue.order),
     '',
     '## Full progress data',
     'This block restores the learner on any phone: Settings, Import, this file.',

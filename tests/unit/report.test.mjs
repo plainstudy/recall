@@ -54,6 +54,7 @@ test('the report names the learner, role and track, and has every section (test 
   assert.ok(!visible.includes('2026-10-01'), 'sessions before the period are left out');
   assert.ok(text.includes('| Leavening | 7 | 4 | 57% |'));
   assert.ok(text.includes('| Shaping | 2 | 2 | 100% |'));
+  assert.ok(text.includes('| Term | Confused with | Times |'), 'the pairs have no direction');
   assert.ok(text.includes('| Levain | Poolish | 2 |'));
   assert.ok(text.includes('| Banneton | Couche | 1 |'));
   assert.ok(text.includes('| atom.ingredient.poolish | At the oven (bk_l02) | 3 | bk_l02_c04 |'));
