@@ -33,7 +33,10 @@ test('a saved report restores a wiped browser exactly: streak, position, every a
   expect(download.suggestedFilename()).toMatch(REPORT_NAME);
   await expect(page.locator('.notice')).toHaveText(`Report downloaded: ${download.suggestedFilename()}.`);
   const saved = (await readStored(page)).progress;
-  expect(saved.reportsSavedOn.length).toBe(seed.progress.reportsSavedOn.length + 1);
+  // The restored report carries its own day among the report days; saving adds the day
+  // in the new file's name, whatever the date is when the test runs.
+  const savedDay = /_(\d{4}-\d{2}-\d{2})\.md$/.exec(download.suggestedFilename())[1];
+  expect(saved.reportsSavedOn).toEqual([...new Set([...seed.marked.reportsSavedOn, savedDay])].sort());
   expect(saved.termRequests.every((r) => r.reportedOn !== null)).toBe(true);
   const path = testInfo.outputPath(download.suggestedFilename());
   await download.saveAs(path);
