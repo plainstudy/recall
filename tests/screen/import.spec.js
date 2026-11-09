@@ -30,8 +30,8 @@ test('a pack is imported after its glossary; a malformed one, or one needing a n
 
   await expectRefusal(
     page,
-    await packWith((p) => (p.engineMin = '0.3.0')),
-    `This pack needs engine 0.3.0 or later. This app is ${ENGINE_VERSION}. Restart the app when it has updated.`,
+    await packWith((p) => (p.engineMin = '9.0.0')),
+    `This pack needs engine 9.0.0 or later. This app is ${ENGINE_VERSION}. Restart the app when it has updated.`,
   );
   await expectRefusal(
     page,
