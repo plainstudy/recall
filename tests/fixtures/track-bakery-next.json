@@ -1,0 +1,11 @@
+{
+  "trackId": "baker",
+  "trackVersion": "1.1",
+  "engineMin": "0.2.0",
+  "title": "Baker",
+  "role": "Baker",
+  "packs": [
+    "bakery_basics",
+    "pastry_basics"
+  ]
+}

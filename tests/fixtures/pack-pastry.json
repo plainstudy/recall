@@ -1,0 +1,368 @@
+{
+  "packId": "pastry_basics",
+  "packVersion": "1.0",
+  "engineMin": "0.2.0",
+  "contentClass": "public",
+  "order": 2,
+  "title": "Pastry basics",
+  "subtitle": "Invented test content about pastry",
+  "authoredOn": "2026-11-10",
+  "figures": {},
+  "lessons": [
+    {
+      "lessonId": "pa_l01",
+      "order": 1,
+      "title": "Layers of butter",
+      "objective": "Say how layered pastry gets its layers, and read a pastry order.",
+      "estMinutes": 4,
+      "prerequisites": [],
+      "verification": {
+        "status": "verified",
+        "sources": [
+          "Invented for tests."
+        ],
+        "checkedOn": "2026-11-10",
+        "note": "Invented content."
+      },
+      "cards": [
+        {
+          "cardId": "pa_l01_c01",
+          "type": "teach",
+          "prompt": "Layered pastry starts as a slab of butter wrapped in dough. Rolling it out and folding it, again and again, is `lamination`: each fold multiplies the layers. In the oven the water in the butter turns to steam and lifts them apart."
+        },
+        {
+          "cardId": "pa_l01_c02",
+          "type": "mcq",
+          "srsKey": "atom.technique.lamination",
+          "prompt": "What gives a croissant its layers?",
+          "options": [
+            {
+              "id": "a",
+              "text": "Lamination",
+              "correct": true,
+              "termRef": "lamination",
+              "feedback": "Folding butter into the dough, again and again, makes the layers."
+            },
+            {
+              "id": "b",
+              "text": "Scoring",
+              "correct": false,
+              "termRef": "scoring",
+              "feedback": "Scoring is the cut on a loaf before it bakes."
+            },
+            {
+              "id": "c",
+              "text": "A long knead",
+              "correct": false,
+              "feedback": "Kneading builds stretch, and it would work the butter into the dough."
+            }
+          ],
+          "feedback": "Layers come from folds, with butter between them.",
+          "difficulty": 1,
+          "glossaryRefs": [
+            "lamination"
+          ]
+        },
+        {
+          "cardId": "pa_l01_c03",
+          "type": "teach",
+          "prompt": "The butter has to stay cold and firm. Warm butter soaks into the dough, and the layers are gone before the oven. So the dough goes back to the fridge between folds."
+        },
+        {
+          "cardId": "pa_l01_c04",
+          "type": "cloze",
+          "srsKey": "atom.technique.cold-butter",
+          "prompt": "Between folds the dough rests in the fridge, so the butter stays ___.",
+          "chips": [
+            {
+              "id": "a",
+              "text": "cold",
+              "correct": true
+            },
+            {
+              "id": "b",
+              "text": "soft",
+              "correct": false
+            },
+            {
+              "id": "c",
+              "text": "melted",
+              "correct": false
+            }
+          ],
+          "feedback": "Cold butter stays in its own layer.",
+          "difficulty": 1,
+          "glossaryRefs": [
+            "lamination"
+          ]
+        },
+        {
+          "cardId": "pa_l01_c05",
+          "type": "cloze",
+          "srsKey": "atom.ingredient.hydration",
+          "prompt": "A pastry dough of `1000 g` flour and `600 g` water is at ___ hydration.",
+          "chips": [
+            {
+              "id": "a",
+              "text": "60%",
+              "correct": true
+            },
+            {
+              "id": "b",
+              "text": "40%",
+              "correct": false
+            },
+            {
+              "id": "c",
+              "text": "160%",
+              "correct": false
+            }
+          ],
+          "feedback": "Hydration is water over flour, here as in bread: 600 over 1000.",
+          "difficulty": 2,
+          "glossaryRefs": []
+        },
+        {
+          "cardId": "pa_l01_c06",
+          "type": "order",
+          "srsKey": "atom.technique.fold-steps",
+          "prompt": "Put one round of folding in order.",
+          "items": [
+            {
+              "id": "chill",
+              "text": "Chill",
+              "position": 3
+            },
+            {
+              "id": "roll",
+              "text": "Roll out",
+              "position": 1
+            },
+            {
+              "id": "fold",
+              "text": "Fold in three",
+              "position": 2
+            }
+          ],
+          "feedback": "Roll, fold, chill: then the next round starts.",
+          "difficulty": 1,
+          "glossaryRefs": [
+            "lamination"
+          ]
+        },
+        {
+          "cardId": "pa_l01_c07",
+          "type": "desk",
+          "srsKey": "atom.desk.pastry-order",
+          "deskRef": true,
+          "prompt": "This order comes in by text. What has to be ready?",
+          "artifact": {
+            "kind": "enquiry",
+            "text": "12 x croissant for Fri 07:00\n6 plain, 6 almond\nboxed in sixes"
+          },
+          "options": [
+            {
+              "id": "a",
+              "text": "Six plain and six almond croissants, in two boxes of six, by seven on Friday",
+              "correct": true,
+              "feedback": "Twelve in all, split by kind, and boxed as asked."
+            },
+            {
+              "id": "b",
+              "text": "Twelve plain and twelve almond croissants, loose, on Friday morning",
+              "correct": false,
+              "feedback": "The twelve is the total, and the order asks for boxes."
+            },
+            {
+              "id": "c",
+              "text": "Six almond croissants in one box, by seven on Friday",
+              "correct": false,
+              "feedback": "That leaves out the six plain ones."
+            }
+          ],
+          "difficulty": 2,
+          "glossaryRefs": []
+        }
+      ]
+    },
+    {
+      "lessonId": "pa_l02",
+      "order": 2,
+      "title": "From the tin to the counter",
+      "objective": "Name the common pastries, and read a note left for the next shift.",
+      "estMinutes": 4,
+      "prerequisites": [
+        "pa_l01"
+      ],
+      "verification": {
+        "status": "verified",
+        "sources": [
+          "Invented for tests."
+        ],
+        "checkedOn": "2026-11-10",
+        "note": "Invented content."
+      },
+      "cards": [
+        {
+          "cardId": "pa_l02_c01",
+          "type": "teach",
+          "prompt": "A tart case is often baked empty first, lined with paper and filled with dried beans to hold its shape. Bakers call this baking blind. The filling goes in afterwards, so the base stays crisp."
+        },
+        {
+          "cardId": "pa_l02_c02",
+          "type": "mcq",
+          "srsKey": "atom.technique.baking-blind",
+          "prompt": "Why is a tart case baked blind?",
+          "options": [
+            {
+              "id": "a",
+              "text": "So the base stays crisp under the filling",
+              "correct": true,
+              "feedback": "The case sets before anything wet goes in."
+            },
+            {
+              "id": "b",
+              "text": "So the filling cooks faster",
+              "correct": false,
+              "feedback": "The filling isn't in the case yet."
+            },
+            {
+              "id": "c",
+              "text": "So the dough rises higher",
+              "correct": false,
+              "feedback": "The beans are there to stop it rising."
+            }
+          ],
+          "feedback": "Baking blind is about the base.",
+          "difficulty": 1,
+          "glossaryRefs": []
+        },
+        {
+          "cardId": "pa_l02_c03",
+          "type": "multi",
+          "srsKey": "atom.pastry.layered-kinds",
+          "prompt": "Which of these are layered with butter? Choose every one that is.",
+          "options": [
+            {
+              "id": "a",
+              "text": "Croissant",
+              "correct": true
+            },
+            {
+              "id": "b",
+              "text": "Puff pastry",
+              "correct": true
+            },
+            {
+              "id": "c",
+              "text": "Shortcrust",
+              "correct": false
+            },
+            {
+              "id": "d",
+              "text": "Sponge",
+              "correct": false
+            }
+          ],
+          "feedback": "Croissant and puff pastry are both folded with butter. Shortcrust is rubbed together, and a sponge is a batter.",
+          "difficulty": 2,
+          "glossaryRefs": [
+            "lamination"
+          ]
+        },
+        {
+          "cardId": "pa_l02_c04",
+          "type": "teach",
+          "prompt": "Before baking, pastry is brushed with beaten egg. It gives the shine and the deep colour. Brush the tops only: egg that runs down the cut sides glues the layers shut."
+        },
+        {
+          "cardId": "pa_l02_c05",
+          "type": "cloze",
+          "srsKey": "atom.technique.egg-wash",
+          "prompt": "Egg on the cut sides of layered pastry ___ the layers.",
+          "chips": [
+            {
+              "id": "a",
+              "text": "glues",
+              "correct": true
+            },
+            {
+              "id": "b",
+              "text": "lifts",
+              "correct": false
+            },
+            {
+              "id": "c",
+              "text": "doubles",
+              "correct": false
+            }
+          ],
+          "feedback": "Keep the egg on the tops, and the sides are free to rise.",
+          "difficulty": 1,
+          "glossaryRefs": [
+            "lamination"
+          ]
+        },
+        {
+          "cardId": "pa_l02_c06",
+          "type": "match",
+          "srsKey": "atom.pastry.kinds",
+          "prompt": "Match each pastry to what it is.",
+          "pairs": [
+            {
+              "id": "cr",
+              "left": "Croissant",
+              "right": "A crescent of layered dough"
+            },
+            {
+              "id": "ta",
+              "left": "Tart",
+              "right": "An open case with a filling"
+            },
+            {
+              "id": "ec",
+              "left": "Eclair",
+              "right": "A piped finger filled with cream"
+            }
+          ],
+          "feedback": "Three shapes a pastry counter always has.",
+          "difficulty": 1,
+          "glossaryRefs": []
+        },
+        {
+          "cardId": "pa_l02_c07",
+          "type": "desk",
+          "srsKey": "atom.desk.pastry-handover",
+          "deskRef": true,
+          "prompt": "The early shift leaves this note. What does the next shift do first?",
+          "artifact": {
+            "kind": "report",
+            "text": "Croissant dough: 2 folds done, in fridge since 05:30\nTart cases baked blind, cooling\nEgg wash made"
+          },
+          "options": [
+            {
+              "id": "a",
+              "text": "Give the croissant dough its next fold",
+              "correct": true,
+              "feedback": "The dough has rested and is part-way through its folds."
+            },
+            {
+              "id": "b",
+              "text": "Bake the tart cases blind",
+              "correct": false,
+              "feedback": "The note says they are baked and cooling."
+            },
+            {
+              "id": "c",
+              "text": "Mix a new batch of croissant dough",
+              "correct": false,
+              "feedback": "There is dough in the fridge already, two folds in."
+            }
+          ],
+          "difficulty": 2,
+          "glossaryRefs": []
+        }
+      ]
+    }
+  ]
+}
