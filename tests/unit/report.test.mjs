@@ -2,16 +2,17 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { findProgressBlock, recognise } from '../../engine/formats.js';
 import { emptyContent, planImport, progressAfter } from '../../engine/importing.js';
-import { newProgress, PROGRESS_MESSAGES, restoredProgress } from '../../engine/progress.js';
+import { checkProgress, newProgress, PROGRESS_MESSAGES, restoredProgress } from '../../engine/progress.js';
 import { buildReport, learnerSlug, reportFileName, reportPeriod, withReportMarks } from '../../engine/report.js';
 import { clockAt } from './clock.mjs';
-import { fixtureText, seasonedProgress } from './fixtures.mjs';
+import { asSchemaTwo, fixtureText, seasonedProgress } from './fixtures.mjs';
+import { seededRandom } from './seeded.mjs';
 
-const ENGINE = '0.2.0';
+const ENGINE = '0.3.0';
 
 // A phone with the bakery bundle and a learner part-way through.
 function bakeryPhone(clock) {
-  const progress = newProgress({ name: 'Sam Baker', role: 'Head baker' }, clock, ENGINE);
+  const progress = newProgress({ name: 'Sam Baker', role: 'Head baker' }, clock, ENGINE, seededRandom(1));
   progress.profile.createdOn = '2026-11-01';
   const plan = planImport(recognise(fixtureText('bundle-bakery.json')), { content: emptyContent(), progress, engineVersion: ENGINE });
   const after = progressAfter(progress, plan.nextContent, clock, ENGINE);
@@ -43,7 +44,7 @@ test('the report names the learner, role and track, and has every section (test 
   const lines = text.split('\n');
   assert.equal(lines[0], '# Bakery School — weekly report');
   assert.equal(lines[2], 'Learner: Sam Baker · Role: Head baker · Track: Baker (baker 1.0)');
-  assert.equal(lines[3], 'Period: 2026-11-08 to 2026-11-15 · Saved 2026-11-15 07:20 · Engine 0.2.0 · Glossary 1.1');
+  assert.equal(lines[3], 'Period: 2026-11-08 to 2026-11-15 · Saved 2026-11-15 07:20 · Engine 0.3.0 · Glossary 1.1');
   for (const heading of ['## Sessions', '## Accuracy by family', '## Top confusions', '## Failing atoms', '## Requested terms', '## Position', '## Full progress data']) {
     assert.ok(lines.includes(heading), heading);
   }
@@ -65,7 +66,7 @@ test('the report names the learner, role and track, and has every section (test 
 
 test('a learner with nothing yet gets a plain report', () => {
   const clock = clockAt('2026-11-15T07:20:00+03:00');
-  const progress = newProgress({ name: 'Sam', role: 'Baker' }, clock, ENGINE);
+  const progress = newProgress({ name: 'Sam', role: 'Baker' }, clock, ENGINE, seededRandom(1));
   const { fileName, text } = buildReport(progress, emptyContent(), clock, ENGINE);
   assert.equal(fileName, 'Report_Sam_2026-11-15.md');
   assert.ok(text.startsWith('# Recall — weekly report\n\nLearner: Sam · Role: Baker · Track: none\n'));
@@ -91,10 +92,10 @@ test('the progress block carries the report marks, and round-trips exactly (test
 
   // Restored on a wiped phone, after the bundle: streak, position and every atom as saved.
   clock.set('2026-11-16T09:00:00+03:00');
-  const fresh = newProgress({ name: 'Test', role: 'Test' }, clock, ENGINE);
+  const fresh = newProgress({ name: 'Test', role: 'Test' }, clock, ENGINE, seededRandom(2));
   const bundle = planImport(recognise(fixtureText('bundle-bakery.json')), { content: emptyContent(), progress: fresh, engineVersion: ENGINE });
   const wiped = progressAfter(fresh, bundle.nextContent, clock, ENGINE);
-  const plan = planImport(recognise(text), { content: bundle.nextContent, progress: wiped, engineVersion: ENGINE });
+  const plan = planImport(recognise(text), { content: bundle.nextContent, progress: wiped, engineVersion: ENGINE, random: seededRandom(3) });
   assert.equal(plan.ok, true);
   assert.deepEqual(plan.lines, ["Restore Sam Baker's progress from 15 November 2026? This replaces the progress on this phone."]);
   const restored = restoredProgress(wiped, plan.fromReport, clock, ENGINE);
@@ -102,12 +103,40 @@ test('the progress block carries the report marks, and round-trips exactly (test
   assert.deepEqual(restored.position, phone.progress.position);
   assert.deepEqual(restored.atoms, phone.progress.atoms);
   assert.deepEqual(restored.profile, phone.progress.profile);
+  assert.deepEqual(restored.sessionLog, phone.progress.sessionLog);
   assert.deepEqual(restored.installed, wiped.installed);
+  assert.equal(restored.deviceId, wiped.deviceId, "this phone's own id stays");
+});
+
+test('a report from an older app restores: its progress is migrated, then checked (test 38)', () => {
+  const clock = clockAt('2026-11-15T07:20:00+03:00');
+  const phone = bakeryPhone(clock);
+  const older = asSchemaTwo(phone.progress);
+  const { text } = buildReport(older, phone.content, clock, '0.2.1');
+  assert.ok(text.includes('"schemaVersion": 2'));
+  for (const field of ['learnerId', 'deviceId', 'changedAt']) assert.ok(!text.includes(field), field);
+
+  clock.set('2026-11-15T09:00:00+03:00');
+  const fresh = newProgress({ name: 'Test', role: 'Test' }, clock, ENGINE, seededRandom(2));
+  const bundle = planImport(recognise(fixtureText('bundle-bakery.json')), { content: emptyContent(), progress: fresh, engineVersion: ENGINE });
+  const wiped = progressAfter(fresh, bundle.nextContent, clock, ENGINE);
+  const plan = planImport(recognise(text), { content: bundle.nextContent, progress: wiped, engineVersion: ENGINE, random: seededRandom(3) });
+  assert.equal(plan.ok, true, plan.message);
+  assert.deepEqual(plan.lines, ["Restore Sam Baker's progress from 15 November 2026? This replaces the progress on this phone."]);
+  const restored = restoredProgress(wiped, plan.fromReport, clock, ENGINE);
+  assert.deepEqual(checkProgress(restored), { ok: true });
+  assert.equal(restored.schemaVersion, 3);
+  assert.equal(restored.deviceId, wiped.deviceId, "this phone's own id stays");
+  assert.notEqual(restored.profile.learnerId, wiped.profile.learnerId, 'the report had no learner id, so the migration made one');
+  // Nothing is lost: everything the older progress held is still there, as it was.
+  const back = asSchemaTwo(restored);
+  assert.deepEqual(back.profile, older.profile);
+  for (const key of ['settings', 'streak', 'position', 'atoms', 'families', 'confusions', 'sessionLog']) assert.deepEqual(back[key], older[key], key);
 });
 
 test('a block whose text holds backticks still restores', () => {
   const clock = clockAt('2026-11-15T07:20:00+03:00');
-  const progress = newProgress({ name: 'Sam', role: 'Baker' }, clock, ENGINE);
+  const progress = newProgress({ name: 'Sam', role: 'Baker' }, clock, ENGINE, seededRandom(1));
   progress.termRequests = [{ text: '```json progress', on: '2026-11-15', reportedOn: null }];
   const { text, marked } = buildReport(progress, emptyContent(), clock, ENGINE);
   assert.deepEqual(JSON.parse(findProgressBlock(text)), marked);
@@ -127,9 +156,9 @@ test('restore warns when the phone has newer progress with sessions, and refuses
   const noSessions = { ...newer, sessionLog: [] };
   assert.equal(planImport(recognise(text), { content: phone.content, progress: noSessions, engineVersion: ENGINE }).lines.length, 1);
 
-  const fromNewerApp = text.replace('"schemaVersion": 2', '"schemaVersion": 3');
+  const fromNewerApp = text.replace('"schemaVersion": 3', '"schemaVersion": 4');
   const refused = planImport(recognise(fromNewerApp), { content: phone.content, progress: newer, engineVersion: ENGINE });
   assert.deepEqual([refused.ok, refused.message], [false, PROGRESS_MESSAGES.newerApp]);
-  const garbled = text.replace('"schemaVersion": 2', '"schemaVersion": 2,,');
+  const garbled = text.replace('"schemaVersion": 3', '"schemaVersion": 3,,');
   assert.equal(planImport(recognise(garbled), { content: phone.content, progress: newer, engineVersion: ENGINE }).message, PROGRESS_MESSAGES.mismatch);
 });

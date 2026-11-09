@@ -7,13 +7,24 @@ import { newProgress } from '../../engine/progress.js';
 import { buildReport } from '../../engine/report.js';
 import { ENGINE_VERSION } from '../../version.js';
 import { clockAt } from '../unit/clock.mjs';
-import { fixtureText, seasonedProgress } from '../unit/fixtures.mjs';
+import { asSchemaTwo, fixtureText, seasonedProgress } from '../unit/fixtures.mjs';
+import { seededRandom } from '../unit/seeded.mjs';
 
-export async function seededReport(path, { name = 'Sam Baker', role = 'Head baker', stamp = '2026-11-15T07:20:00+03:00', change } = {}) {
+export const SEED_STAMP = '2026-11-15T07:20:00+03:00';
+
+// Options: `bundle` names the bundle fixture installed; `progress` changes the seeded
+// progress before the report is made; `older` writes the report as an app at schema 2
+// did; `change` edits the finished text.
+export async function seededReport(
+  path,
+  { name = 'Sam Baker', role = 'Head baker', stamp = SEED_STAMP, bundle = 'bundle-bakery.json', progress: adjust, older = false, change } = {},
+) {
   const clock = clockAt(stamp);
-  const progress = newProgress({ name, role }, clock, ENGINE_VERSION);
-  const plan = planImport(recognise(fixtureText('bundle-bakery.json')), { content: emptyContent(), progress, engineVersion: ENGINE_VERSION });
-  const seeded = seasonedProgress(progressAfter(progress, plan.nextContent, clock, ENGINE_VERSION));
+  const progress = newProgress({ name, role }, clock, ENGINE_VERSION, seededRandom(7));
+  const plan = planImport(recognise(fixtureText(bundle)), { content: emptyContent(), progress, engineVersion: ENGINE_VERSION });
+  let seeded = seasonedProgress(progressAfter(progress, plan.nextContent, clock, ENGINE_VERSION));
+  if (adjust) seeded = adjust(seeded);
+  if (older) seeded = asSchemaTwo(seeded);
   const report = buildReport(seeded, plan.nextContent, clock, ENGINE_VERSION);
   await writeFile(path, change ? change(report.text) : report.text);
   return { path, progress: seeded, marked: report.marked, fileName: report.fileName };

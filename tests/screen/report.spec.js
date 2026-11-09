@@ -94,7 +94,7 @@ test('a share that goes ahead marks the report saved; a cancelled one changes no
 test('restore warns when this phone’s own progress is newer and holds sessions; a newer app’s report is refused', async ({ page }, testInfo) => {
   const seed = await seededReport(testInfo.outputPath('seed.md'));
   const older = await seededReport(testInfo.outputPath('older.md'), { stamp: '2026-10-20T09:00:00+03:00' });
-  const newer = await seededReport(testInfo.outputPath('newer.md'), { change: (text) => text.replace('"schemaVersion": 2', '"schemaVersion": 3') });
+  const newer = await seededReport(testInfo.outputPath('newer.md'), { change: (text) => text.replace('"schemaVersion": 3', '"schemaVersion": 4') });
   await firstRun(page);
   await install(page, 'bundle-bakery.json');
   await restore(page, seed.path);

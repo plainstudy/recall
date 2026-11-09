@@ -27,7 +27,7 @@ export const CONTROLLER_MESSAGES = {
 export async function startApp(root, { version, random, clock }) {
   let storage = await openStorage();
   let content = await storage.readContent();
-  let progress = await storage.readProgress();
+  let progress = await storage.readProgress(random);
   let away = false;
   let notice = null;
   let busy = false;
@@ -128,7 +128,7 @@ export async function startApp(root, { version, random, clock }) {
       profileScreen({
         version,
         onDone: once(async (profile) => {
-          const made = newProgress(profile, clock, version);
+          const made = newProgress(profile, clock, version, random);
           await (await store()).writeProgress(made);
           progress = made;
           show(bundleQuestionScreen({ onImport: chooseImport, onSkip: () => showHome() }));
@@ -145,7 +145,7 @@ export async function startApp(root, { version, random, clock }) {
       if (!read.ok) return refuse(file.name, read.message, 0);
       const recognised = recognise(read.text);
       if (!recognised.kind) return refuse(file.name, recognised.message, 0);
-      const plan = planImport(recognised, { content, progress, engineVersion: version });
+      const plan = planImport(recognised, { content, progress, engineVersion: version, random });
       if (!plan.ok) return refuse(file.name, plan.message, plan.more);
       goAway(confirmScreen({ fileName: file.name, plan, onCancel: () => home(), onConfirm: once(() => install(file.name, plan)) }));
       return null;

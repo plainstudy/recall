@@ -7,7 +7,8 @@
 // (one object), `presentations` (the last option orders, by card id) and `session` (the
 // session in progress, from a later version).
 
-import { checkProgress, newerOf } from '../engine/progress.js';
+import { upgradeProgress } from '../engine/migrate.js';
+import { newerOf } from '../engine/progress.js';
 
 const DB_VERSION = 1;
 const PROGRESS_KEY = 'progress';
@@ -56,12 +57,12 @@ function transaction(db, stores, mode, work) {
   });
 }
 
+// The mirror as it was written, still to be brought up to date and checked.
 function readMirror(key) {
   try {
     const text = localStorage.getItem(key);
-    if (!text) return null;
-    const progress = JSON.parse(text);
-    return checkProgress(progress).ok ? progress : null;
+    const progress = text ? JSON.parse(text) : null;
+    return progress !== null && typeof progress === 'object' ? progress : null;
   } catch {
     return null;
   }
@@ -102,19 +103,30 @@ export async function openStorage(scope = appScope()) {
       return content;
     },
 
-    // The progress: whichever of the stored copy and the mirror was saved later. The
-    // stored copy is rebuilt from the mirror when it is missing or older, and the mirror
-    // rewritten when it is.
-    async readProgress() {
+    // The progress: whichever of the stored copy and the mirror was saved later. That one
+    // copy is brought up to the current schema, so progress saved by an older app gains its
+    // new ids once, and both copies are then written from it. The stored copy is rebuilt
+    // from the mirror when it is missing or older, and the mirror rewritten when it is.
+    // `random` makes the ids a migration adds.
+    async readProgress(random) {
       const stored = await transaction(db, ['progress'], 'readonly', (tx) => tx.objectStore('progress').get(PROGRESS_KEY));
       const kept = stored.result || null;
       const mirrored = readMirror(names.mirror);
-      const chosen = newerOf(kept, mirrored);
-      if (chosen && chosen !== kept) {
-        await transaction(db, ['progress'], 'readwrite', (tx) => tx.objectStore('progress').put(chosen, PROGRESS_KEY));
+      const newer = newerOf(kept, mirrored);
+      const copies = [newer, newer === kept ? mirrored : kept].filter(Boolean);
+      for (const copy of copies) {
+        const read = upgradeProgress(copy, random);
+        if (!read.ok) continue;
+        if (read.migrated || copy !== kept) {
+          await transaction(db, ['progress'], 'readwrite', (tx) => tx.objectStore('progress').put(read.progress, PROGRESS_KEY));
+        }
+        if (read.migrated || copy !== mirrored) writeMirror(names.mirror, read.progress);
+        return read.progress;
       }
-      if (chosen && chosen !== mirrored) writeMirror(names.mirror, chosen);
-      return chosen;
+      // Progress is here but can't be read, as when a newer version of the app wrote it.
+      // Starting as a new learner would write over it, so the app doesn't start.
+      if (copies.length > 0) throw new Error('The stored progress could not be read.');
+      return null;
     },
 
     // A change made outside a session: profile, settings, report marks, restore.

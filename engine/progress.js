@@ -1,11 +1,13 @@
 // The progress object (spec §3.7): one per phone, stored, mirrored and carried whole by
-// the weekly report. This module makes a new learner's, checks one read from a report,
-// and works out which of two copies is newer.
+// the weekly report. This module makes a new learner's, checks one at the current schema,
+// and works out which of two copies is newer. Older schemas are brought up to date in
+// migrate.js before they are checked.
 
 import { instantOf, isDay, isStamp, learnerDay, localStamp } from './days.js';
+import { isId, newId } from './ids.js';
 import { isVersion } from './versions.js';
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 export const SESSION_SECONDS = [300, 480, 660, 840];
 export const DEFAULT_SESSION_SECONDS = 660;
 export const THEMES = ['phone', 'night', 'day'];
@@ -67,14 +69,16 @@ export function installedFrom(content) {
 // The time and version every saved copy carries.
 export const stamped = (progress, clock, engineVersion) => ({ ...progress, savedOn: localStamp(clock), engineVersion });
 
-// A new learner's progress, made at first run.
-export function newProgress(profile, clock, engineVersion) {
+// A new learner's progress, made at first run, with an id for this phone's copy of the app
+// and one for the learner.
+export function newProgress(profile, clock, engineVersion, random) {
   return stamped(
     {
       schemaVersion: SCHEMA_VERSION,
       savedOn: null,
       engineVersion,
-      profile: { name: profile.name, role: profile.role, createdOn: learnerDay(clock) },
+      deviceId: newId(random),
+      profile: { learnerId: newId(random), name: profile.name, role: profile.role, createdOn: learnerDay(clock) },
       installed: emptyInstalled(),
       settings: { sessionSeconds: DEFAULT_SESSION_SECONDS, theme: 'phone' },
       streak: {
@@ -119,7 +123,11 @@ function misfit(p) {
   const checks = [
     ['savedOn', () => isStamp(p.savedOn)],
     ['engineVersion', () => isVersion(p.engineVersion)],
-    ['profile', () => isObject(p.profile) && isText(p.profile.name) && isText(p.profile.role) && isDay(p.profile.createdOn)],
+    ['deviceId', () => isId(p.deviceId)],
+    [
+      'profile',
+      () => isObject(p.profile) && isId(p.profile.learnerId) && isText(p.profile.name) && isText(p.profile.role) && isDay(p.profile.createdOn),
+    ],
     ['installed', () => isObject(p.installed)],
     ['settings', () => isObject(p.settings) && SESSION_SECONDS.includes(p.settings.sessionSeconds) && THEMES.includes(p.settings.theme)],
     [
@@ -149,19 +157,21 @@ function misfit(p) {
       'atoms',
       () =>
         isObject(p.atoms) &&
-        Object.values(p.atoms).every((a) => isObject(a) && Number.isInteger(a.box) && a.box >= 1 && a.box <= 5 && isDay(a.dueOn)),
+        Object.values(p.atoms).every(
+          (a) => isObject(a) && Number.isInteger(a.box) && a.box >= 1 && a.box <= 5 && isDay(a.dueOn) && (a.changedAt === null || isStamp(a.changedAt)),
+        ),
     ],
     ['families', () => isObject(p.families)],
     ['confusions', () => Array.isArray(p.confusions)],
     ['termRequests', () => listOf(p.termRequests, (r) => isObject(r) && isText(r.text) && isDay(r.on) && dayOrNull(r.reportedOn))],
-    ['sessionLog', () => listOf(p.sessionLog, isObject)],
+    ['sessionLog', () => listOf(p.sessionLog, (s) => isObject(s) && isId(s.id))],
     ['reportsSavedOn', () => listOf(p.reportsSavedOn, isDay)],
   ];
   const failed = checks.find(([, ok]) => !ok());
   return failed ? failed[0] : null;
 }
 
-// A progress object read from a report: { ok: true } or { ok: false, message, field }.
+// A progress object at the current schema: { ok: true } or { ok: false, message, field }.
 export function checkProgress(p) {
   if (!isObject(p) || !Number.isInteger(p.schemaVersion)) return { ok: false, message: PROGRESS_MESSAGES.mismatch, field: 'schemaVersion' };
   if (p.schemaVersion > SCHEMA_VERSION) return { ok: false, message: PROGRESS_MESSAGES.newerApp, field: 'schemaVersion' };
@@ -170,8 +180,9 @@ export function checkProgress(p) {
   return field ? { ok: false, message: PROGRESS_MESSAGES.mismatch, field } : { ok: true };
 }
 
-// The progress after a restore: the report's, all but `installed`, which always describes
-// the content actually on this phone.
+// The progress after a restore: the report's, the learner's id included, all but
+// `installed`, which always describes the content actually on this phone, and `deviceId`,
+// which names this phone's own copy of the app.
 export function restoredProgress(phone, fromReport, clock, engineVersion) {
-  return stamped({ ...fromReport, installed: phone.installed }, clock, engineVersion);
+  return stamped({ ...fromReport, deviceId: phone.deviceId, installed: phone.installed }, clock, engineVersion);
 }

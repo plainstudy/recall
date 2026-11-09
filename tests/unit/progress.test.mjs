@@ -12,14 +12,22 @@ import {
 } from '../../engine/progress.js';
 import { clockAt } from './clock.mjs';
 import { fixture, seasonedProgress } from './fixtures.mjs';
+import { seededRandom } from './seeded.mjs';
+
+const ID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 test("first run creates the progress object with spec §3.7's starting values", () => {
   const clock = clockAt('2026-11-16T02:30:00+03:00');
-  assert.deepEqual(newProgress({ name: 'Sam', role: 'Baker' }, clock, '0.2.0'), {
-    schemaVersion: 2,
+  const made = newProgress({ name: 'Sam', role: 'Baker' }, clock, '0.3.0', seededRandom(1));
+  assert.match(made.deviceId, ID);
+  assert.match(made.profile.learnerId, ID);
+  assert.notEqual(made.deviceId, made.profile.learnerId);
+  assert.deepEqual(made, {
+    schemaVersion: 3,
     savedOn: '2026-11-16T02:30:00+03:00',
-    engineVersion: '0.2.0',
-    profile: { name: 'Sam', role: 'Baker', createdOn: '2026-11-15' },
+    engineVersion: '0.3.0',
+    deviceId: made.deviceId,
+    profile: { learnerId: made.profile.learnerId, name: 'Sam', role: 'Baker', createdOn: '2026-11-15' },
     installed: {
       bundleId: null,
       bundleVersion: null,
@@ -91,21 +99,26 @@ test('installed describes the content on the phone', () => {
 
 test("a report's progress is checked against the progress object, and a newer app's is refused", () => {
   const clock = clockAt('2026-11-15T07:14:00+03:00');
-  const good = seasonedProgress(newProgress({ name: 'Sam', role: 'Baker' }, clock, '0.2.0'));
+  const good = seasonedProgress(newProgress({ name: 'Sam', role: 'Baker' }, clock, '0.3.0', seededRandom(1)));
   assert.deepEqual(checkProgress(good), { ok: true });
-  assert.deepEqual(checkProgress({ ...good, schemaVersion: 3 }), { ok: false, message: PROGRESS_MESSAGES.newerApp, field: 'schemaVersion' });
+  assert.deepEqual(checkProgress({ ...good, schemaVersion: 4 }), { ok: false, message: PROGRESS_MESSAGES.newerApp, field: 'schemaVersion' });
   assert.equal(PROGRESS_MESSAGES.newerApp, 'This report comes from a newer version of the app. Restart the app when it has updated.');
   const broken = [
-    ['schemaVersion', { ...good, schemaVersion: 1 }],
-    ['schemaVersion', { ...good, schemaVersion: '2' }],
+    ['schemaVersion', { ...good, schemaVersion: 2 }],
+    ['schemaVersion', { ...good, schemaVersion: '3' }],
+    ['deviceId', { ...good, deviceId: 'this-phone' }],
+    ['profile', { ...good, profile: { ...good.profile, learnerId: good.profile.learnerId.toUpperCase() } }],
     ['savedOn', { ...good, savedOn: '2026-11-15' }],
     ['profile', { ...good, profile: { name: 'Sam' } }],
     ['settings', { ...good, settings: { sessionSeconds: 600, theme: 'phone' } }],
     ['settings', { ...good, settings: { sessionSeconds: 660, theme: 'dark' } }],
     ['streak', { ...good, streak: { ...good.streak, freezesRemaining: 3 } }],
     ['position', { ...good, position: { ...good.position, currentCardIndex: -1 } }],
-    ['atoms', { ...good, atoms: { 'atom.x.y': { box: 6, dueOn: '2026-11-20' } } }],
-    ['atoms', { ...good, atoms: { 'atom.x.y': { box: 2, dueOn: 'tomorrow' } } }],
+    ['atoms', { ...good, atoms: { 'atom.x.y': { box: 6, dueOn: '2026-11-20', changedAt: null } } }],
+    ['atoms', { ...good, atoms: { 'atom.x.y': { box: 2, dueOn: 'tomorrow', changedAt: null } } }],
+    ['atoms', { ...good, atoms: { 'atom.x.y': { box: 2, dueOn: '2026-11-20' } } }],
+    ['atoms', { ...good, atoms: { 'atom.x.y': { box: 2, dueOn: '2026-11-20', changedAt: '2026-11-15' } } }],
+    ['sessionLog', { ...good, sessionLog: [{ day: '2026-11-13', kind: 'daily' }] }],
     ['termRequests', { ...good, termRequests: [{ text: 'x' }] }],
     ['reportsSavedOn', { ...good, reportsSavedOn: ['last week'] }],
   ];
@@ -115,13 +128,16 @@ test("a report's progress is checked against the progress object, and a newer ap
   assert.equal(checkProgress([]).ok, false);
 });
 
-test("a restore takes the report's progress, all but this phone's installed", () => {
+test("a restore takes the report's progress and its learner id, and keeps this phone's own id and installed (test 38)", () => {
   const clock = clockAt('2026-11-15T07:14:00+03:00');
-  const report = seasonedProgress(newProgress({ name: 'Sam', role: 'Baker' }, clock, '0.2.0'));
+  const report = seasonedProgress(newProgress({ name: 'Sam', role: 'Baker' }, clock, '0.3.0', seededRandom(1)));
   report.installed = { ...emptyInstalled(), bundleId: 'elsewhere', packs: { other: '3.0' } };
   clock.set('2026-11-20T09:00:00+03:00');
-  const phone = newProgress({ name: 'Test', role: 'Test' }, clock, '0.2.0');
+  const phone = newProgress({ name: 'Test', role: 'Test' }, clock, '0.3.0', seededRandom(2));
+  assert.notEqual(phone.deviceId, report.deviceId);
+  assert.notEqual(phone.profile.learnerId, report.profile.learnerId);
   phone.installed = { ...emptyInstalled(), bundleId: 'bakery', packs: { bakery_basics: '1.0' } };
-  const restored = restoredProgress(phone, report, clock, '0.2.0');
-  assert.deepEqual(restored, { ...report, installed: phone.installed, savedOn: '2026-11-20T09:00:00+03:00' });
+  const restored = restoredProgress(phone, report, clock, '0.3.0');
+  assert.deepEqual(restored, { ...report, deviceId: phone.deviceId, installed: phone.installed, savedOn: '2026-11-20T09:00:00+03:00' });
+  assert.equal(restored.profile.learnerId, report.profile.learnerId);
 });

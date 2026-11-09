@@ -103,6 +103,31 @@ export function readStored(page) {
   });
 }
 
+// Puts a progress object on the phone as an app would have left it: in the database and,
+// unless `mirror` is false, in the mirror. The page must be reloaded to read it.
+export function writeStored(page, progress, { mirror = true } = {}) {
+  return page.evaluate(
+    async ({ progress, mirror }) => {
+      const scope = new URL('./', location.href).href;
+      const db = await new Promise((resolve, reject) => {
+        const open = indexedDB.open(`data@${scope}`);
+        open.onsuccess = () => resolve(open.result);
+        open.onerror = () => reject(open.error);
+      });
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction('progress', 'readwrite');
+        tx.objectStore('progress').put(progress, 'progress');
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+      db.close();
+      if (mirror) localStorage.setItem(`progress@${scope}`, JSON.stringify(progress));
+      else localStorage.removeItem(`progress@${scope}`);
+    },
+    { progress, mirror },
+  );
+}
+
 export async function openLesson(page, number) {
   await page.getByRole('button', { name: new RegExp(`^Lesson ${number}(?!\\d)`) }).click();
 }

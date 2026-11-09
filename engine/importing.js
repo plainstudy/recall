@@ -8,7 +8,8 @@
 import { longDate, stampDay, instantOf } from './days.js';
 import { changesText, glossaryChanges } from './glossary.js';
 import { positionAfterUpdate } from './lessons.js';
-import { checkProgress, installedFrom, PROGRESS_MESSAGES, stamped } from './progress.js';
+import { upgradeProgress } from './migrate.js';
+import { installedFrom, PROGRESS_MESSAGES, stamped } from './progress.js';
 import { checkFile, newerInstalled, problemText } from './validate.js';
 import { compareVersions } from './versions.js';
 
@@ -52,7 +53,8 @@ function refusal(problems) {
 }
 
 // Plans the import of a recognised file: { kind, data } from formats.recognise.
-//   ctx: { content, progress, engineVersion }
+//   ctx: { content, progress, engineVersion, random }, the random source giving an older
+//   report's progress the ids it gains when it is brought up to date
 // Returns { ok: false, message, more, problems } or, for content,
 //   { ok: true, kind, lines, warnings, done, nextContent, writes: { put: [[key, value]], remove: [key] } }
 // and, for a report,
@@ -171,15 +173,17 @@ export function progressAfter(progress, nextContent, clock, engineVersion) {
   );
 }
 
-function planRestore(blockText, { progress }) {
-  let fromReport;
+function planRestore(blockText, { progress, random }) {
+  let parsed;
   try {
-    fromReport = JSON.parse(blockText);
+    parsed = JSON.parse(blockText);
   } catch {
     return refusal([{ item: '', message: PROGRESS_MESSAGES.mismatch }]);
   }
-  const check = checkProgress(fromReport);
-  if (!check.ok) return refusal([{ item: '', message: check.message }]);
+  // Progress from an older app is migrated first, then checked.
+  const read = upgradeProgress(parsed, random);
+  if (!read.ok) return refusal([{ item: '', message: read.message }]);
+  const fromReport = read.progress;
   const name = fromReport.profile.name;
   const lines = [`Restore ${name}'s progress from ${longDate(stampDay(fromReport.savedOn))}? This replaces the progress on this phone.`];
   const phoneNewer = progress && instantOf(progress.savedOn) > instantOf(fromReport.savedOn) && progress.sessionLog.length > 0;

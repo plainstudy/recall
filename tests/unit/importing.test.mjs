@@ -7,6 +7,7 @@ import { newProgress } from '../../engine/progress.js';
 import { MESSAGES } from '../../engine/validate.js';
 import { clockAt } from './clock.mjs';
 import { fixture, fixtureText, seasonedProgress } from './fixtures.mjs';
+import { seededRandom } from './seeded.mjs';
 
 const ENGINE = '0.2.0';
 
@@ -18,7 +19,7 @@ function install(state, name, clock) {
 }
 
 function freshPhone(clock) {
-  return { content: emptyContent(), progress: newProgress({ name: 'Sam', role: 'Baker' }, clock, ENGINE) };
+  return { content: emptyContent(), progress: newProgress({ name: 'Sam', role: 'Baker' }, clock, ENGINE, seededRandom(1)) };
 }
 
 test('a bundle installs its glossary, pack and track in one import, and lessons follow the track (test 32)', () => {
