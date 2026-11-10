@@ -1094,12 +1094,144 @@ ul.answer-key-list {
   font-size: 16px;
 }
 
-/* The Glossary */
-.term-names {
+/* The Glossary: filters at the top, results in the middle, the search field at the foot. */
+.filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap);
+}
+
+.action-bar > .search-field {
+  flex: 1 1 auto;
+}
+
+.results {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 8px 0 0 20px;
+  gap: 12px;
+  padding-top: 16px;
+}
+
+.result-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  border-color: var(--rule);
+  border-radius: 9px;
+  background: var(--panel);
+  color: var(--text);
+  font-weight: 400;
+  text-align: left;
+}
+
+.result-name {
+  color: var(--heading);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.result-name.result-warning {
+  color: var(--slowdown);
+}
+
+.result-note,
+.no-match,
+.request-done {
+  color: var(--muted);
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+.request {
+  align-self: flex-start;
+}
+
+/* A term on its own screen. */
+.term-heading,
+.term-expansion,
+.term-definition,
+.term-spoken,
+.variant-name,
+.variant-used,
+.variant-note,
+.warning-line,
+.warning-why {
+  overflow-wrap: anywhere;
+}
+
+.term-expansion,
+.term-where {
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.term-markers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.term-section {
+  padding-top: 16px;
+}
+
+.variant-list,
+.warning-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.variant-name {
+  font-weight: 600;
+}
+
+.variant-used,
+.variant-note {
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.term-warning {
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--slowdown);
+  border-radius: 9px;
+  background: var(--tint-slowdown);
+}
+
+.warning-line {
+  color: var(--slowdown);
+  font-weight: 600;
+}
+
+.warning-why {
+  font-size: 16px;
+}
+
+.related-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap);
+}
+
+.term-where {
+  padding-top: 16px;
 }
 
 .installed-list {

@@ -43,6 +43,7 @@ const PAGE = [
   './engine/report.js',
   './engine/schedule.js',
   './engine/scoring.js',
+  './engine/search.js',
   './engine/session.js',
   './engine/streak.js',
   './engine/text.js',
@@ -74,6 +75,7 @@ const PAGE = [
   './ui/settings-screen.js',
   './ui/storage.js',
   './ui/summary-screen.js',
+  './ui/term-screen.js',
   './ui/theme.js',
 ];
 

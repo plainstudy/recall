@@ -12,6 +12,7 @@ import { OVERVIEW_TEXT, overviewOf, reportDue, summaryLines } from '../engine/ov
 import { createPresentations } from '../engine/presentations.js';
 import { SESSION_SECONDS, THEMES, checkName, newProgress, restoredProgress, stamped } from '../engine/progress.js';
 import { buildReport } from '../engine/report.js';
+import { isRequested, requestTerm, termView } from '../engine/search.js';
 import { canContinue, startSession } from '../engine/session.js';
 import { checkStreak } from '../engine/streak.js';
 import { APP_NAME } from './app-name.js';
@@ -27,6 +28,7 @@ import { sessionRunner } from './session-runner.js';
 import { settingsScreen } from './settings-screen.js';
 import { appScope, openStorage } from './storage.js';
 import { summaryScreen } from './summary-screen.js';
+import { termScreen } from './term-screen.js';
 import { applyTheme } from './theme.js';
 
 export const CONTROLLER_MESSAGES = {
@@ -53,6 +55,8 @@ export async function startApp(root, { version, random, clock }) {
   let notice = null; // what was just done, shown once by the next place drawn
   let busy = false;
   let onlyReview = false; // the Library's filter
+  // The Glossary's search and filters, kept while the app runs.
+  const glossaryState = { query: '', domain: null, family: null, category: null, showRetired: false };
 
   // Erase closes the database; it opens again only when there is something to keep.
   const store = async () => {
@@ -76,6 +80,8 @@ export async function startApp(root, { version, random, clock }) {
   function setContent(next) {
     content = next;
     catalogue = catalogueOf(next);
+    // A new glossary may not have the same lists, so its filters start clear.
+    Object.assign(glossaryState, { domain: null, family: null, category: null });
   }
 
   // Runs one change at a time, so a second tap can't apply it twice.
@@ -345,8 +351,39 @@ export async function startApp(root, { version, random, clock }) {
   }
 
   function showGlossary() {
-    show(glossaryScreen({ glossary: content.glossary, onPlace: goPlace }));
+    show(
+      glossaryScreen({
+        glossary: content.glossary,
+        state: glossaryState,
+        onOpen: (termId) => open(() => showTerm(termId)),
+        onRequest: requestATerm,
+        isRequested: (typed) => isRequested(progress, typed),
+        onPlace: goPlace,
+      }),
+    );
   }
+
+  function showTerm(termId) {
+    const view = termView(content.glossary, termId);
+    if (!view) {
+      back();
+      return;
+    }
+    show(termScreen({ view, onOpenTerm: (id) => open(() => showTerm(id)), onBack: () => back(), onPlace: goPlace }));
+  }
+
+  // A term the glossary lacks, stored for the next weekly report.
+  const requestATerm = once(async (typed) => {
+    const next = requestTerm(progress, typed, learnerDay(clock));
+    if (next === progress) return;
+    const saved = stamped(next, clock, version);
+    try {
+      await (await store()).writeProgress(saved);
+      progress = saved;
+    } catch {
+      // Not stored: the Request button stays, so it can be tapped again.
+    }
+  });
 
   function showSettings() {
     const message = notice;
