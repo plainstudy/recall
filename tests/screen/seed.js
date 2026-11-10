@@ -5,6 +5,7 @@ import { recognise } from '../../engine/formats.js';
 import { emptyContent, planImport, progressAfter } from '../../engine/importing.js';
 import { newProgress } from '../../engine/progress.js';
 import { buildReport } from '../../engine/report.js';
+import { APP_NAME } from '../../ui/app-name.js';
 import { ENGINE_VERSION } from '../../version.js';
 import { clockAt } from '../unit/clock.mjs';
 import { asSchemaTwo, fixtureText, seasonedProgress } from '../unit/fixtures.mjs';
@@ -25,7 +26,7 @@ export async function seededReport(
   let seeded = seasonedProgress(progressAfter(progress, plan.nextContent, clock, ENGINE_VERSION));
   if (adjust) seeded = adjust(seeded);
   if (older) seeded = asSchemaTwo(seeded);
-  const report = buildReport(seeded, plan.nextContent, clock, ENGINE_VERSION);
+  const report = buildReport(seeded, plan.nextContent, clock, ENGINE_VERSION, APP_NAME);
   await writeFile(path, change ? change(report.text) : report.text);
   return { path, progress: seeded, marked: report.marked, fileName: report.fileName };
 }

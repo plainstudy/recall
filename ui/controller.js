@@ -12,6 +12,7 @@ import { SESSION_SECONDS, newProgress, restoredProgress, stamped } from '../engi
 import { buildReport } from '../engine/report.js';
 import { canContinue, startSession } from '../engine/session.js';
 import { checkStreak } from '../engine/streak.js';
+import { APP_NAME } from './app-name.js';
 import { questionScreen } from './dialogs.js';
 import { filePicker, readPicked, saveFile } from './files.js';
 import { bundleQuestionScreen, profileScreen } from './first-run.js';
@@ -383,7 +384,7 @@ export async function startApp(root, { version, random, clock }) {
   // Builds the report and saves it. The marks go into progress only once the share or the
   // download has gone ahead. Returns the line saying what happened.
   async function saveReport() {
-    const report = buildReport(progress, content, clock, version);
+    const report = buildReport(progress, content, clock, version, APP_NAME);
     const file = new File([report.text], report.fileName, { type: 'text/markdown' });
     const how = await saveFile(file);
     if (how === 'cancelled') return CONTROLLER_MESSAGES.reportCancelled;

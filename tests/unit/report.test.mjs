@@ -4,6 +4,7 @@ import { findProgressBlock, recognise } from '../../engine/formats.js';
 import { emptyContent, planImport, progressAfter } from '../../engine/importing.js';
 import { checkProgress, newProgress, PROGRESS_MESSAGES, restoredProgress } from '../../engine/progress.js';
 import { buildReport, learnerSlug, reportFileName, reportPeriod, withReportMarks } from '../../engine/report.js';
+import { APP_NAME } from '../../ui/app-name.js';
 import { clockAt } from './clock.mjs';
 import { asSchemaTwo, fixtureText, seasonedProgress } from './fixtures.mjs';
 import { seededRandom } from './seeded.mjs';
@@ -68,9 +69,9 @@ test('the report names the learner, role and track, and has every section (test 
 test('a learner with nothing yet gets a plain report', () => {
   const clock = clockAt('2026-11-15T07:20:00+03:00');
   const progress = newProgress({ name: 'Sam', role: 'Baker' }, clock, ENGINE, seededRandom(1));
-  const { fileName, text } = buildReport(progress, emptyContent(), clock, ENGINE);
+  const { fileName, text } = buildReport(progress, emptyContent(), clock, ENGINE, APP_NAME);
   assert.equal(fileName, 'Report_Sam_2026-11-15.md');
-  assert.ok(text.startsWith('# Recall — weekly report\n\nLearner: Sam · Role: Baker · Track: none\n'));
+  assert.ok(text.startsWith(`# ${APP_NAME} — weekly report\n\nLearner: Sam · Role: Baker · Track: none\n`));
   assert.ok(text.includes('· Glossary none'));
   for (const empty of ['No daily sessions in this period.', 'No answers in this period.', 'None recorded.', 'No lessons installed.']) {
     assert.ok(text.includes(empty), empty);

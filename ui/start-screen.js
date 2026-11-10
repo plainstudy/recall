@@ -3,6 +3,7 @@
 // marked completed, current or locked, what is installed, and the report and Erase. The
 // large button, for today's session, sits in the bar at the bottom.
 import { SESSION_SECONDS } from '../engine/progress.js';
+import { APP_NAME } from './app-name.js';
 import { el, textBlock } from './dom.js';
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
@@ -88,7 +89,7 @@ export function startScreen({ progress, content, overview, version, notice, onSe
   return el(
     'section',
     { class: 'screen start-screen' },
-    textBlock('h1', 'app-title', (content.bundle && content.bundle.title) || 'Recall'),
+    textBlock('h1', 'app-title', (content.bundle && content.bundle.title) || APP_NAME),
     textBlock('p', 'lead learner', `${progress.profile.name} · ${progress.profile.role}`),
     notice ? el('p', { class: 'notice', role: 'status', text: notice }) : null,
     empty ? el('p', { class: 'nothing-installed', text: 'Nothing installed yet.' }) : null,

@@ -170,16 +170,17 @@ function fenceFor(text) {
   return '`'.repeat(Math.max(3, longest + 1));
 }
 
-// The report for the progress and content on this phone, now. Returns the file name, the
-// text, and the progress with this report's marks, which is what the block carries and
-// what the phone keeps once the report has been saved.
-export function buildReport(progress, content, clock, engineVersion) {
+// The report for the progress and content on this phone, now. `appName` heads it when no
+// bundle is installed. Returns the file name, the text, and the progress with this
+// report's marks, which is what the block carries and what the phone keeps once the
+// report has been saved.
+export function buildReport(progress, content, clock, engineVersion, appName) {
   const today = learnerDay(clock);
   const catalogue = catalogueOf(content);
   const period = reportPeriod(progress, today);
   const marked = stamped(withReportMarks(progress, today), clock, engineVersion);
   const installed = progress.installed;
-  const title = installed.title || 'Recall';
+  const title = installed.title || appName;
   const track = installed.trackId ? `${line(installed.trackTitle)} (${installed.trackId} ${installed.trackVersion})` : 'none';
   const json = JSON.stringify(marked, null, 2);
   const fence = fenceFor(json);

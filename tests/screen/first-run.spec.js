@@ -1,11 +1,12 @@
 import { expect, test } from '@playwright/test';
 import { PROGRESS_MESSAGES } from '../../engine/progress.js';
+import { APP_NAME } from '../../ui/app-name.js';
 import { chooseFile, firstRun, install, readStored, watchErrors } from './helpers.js';
 
 test('first run, Skip, then the bundle: its title shows, and lessons follow the track with the first current (test 32)', async ({ page }) => {
   const errors = watchErrors(page);
   await firstRun(page);
-  await expect(page.locator('.app-title')).toHaveText('Recall');
+  await expect(page.locator('.app-title')).toHaveText(APP_NAME);
   await expect(page.locator('.learner')).toHaveText('Sam · Baker');
   await expect(page.getByText('Nothing installed yet.')).toBeVisible();
   const fresh = await readStored(page);

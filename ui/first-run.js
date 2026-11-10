@@ -1,6 +1,7 @@
 // First run (spec §7): name, then role, then Import your bundle or Skip. The only typing
 // in the app, apart from search.
 import { PROFILE_MAX, checkProfile } from '../engine/progress.js';
+import { APP_NAME } from './app-name.js';
 import { questionScreen } from './dialogs.js';
 import { el } from './dom.js';
 
@@ -46,7 +47,7 @@ export function profileScreen({ version, onDone }) {
   return el(
     'section',
     { class: 'screen first-run' },
-    el('h1', { text: 'Recall' }),
+    el('h1', { text: APP_NAME }),
     el('p', { class: 'lead', text: 'Your progress is kept on this phone. Start with your name and role.' }),
     name.wrap,
     role.wrap,

@@ -48,6 +48,7 @@ const PAGE = [
   './ui/answer-hotspot.js',
   './ui/answer-match.js',
   './ui/answer-order.js',
+  './ui/app-name.js',
   './ui/card-screen.js',
   './ui/controller.js',
   './ui/dialogs.js',
