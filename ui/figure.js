@@ -1,6 +1,7 @@
 // Figures are drawn as images from data: URLs, so nothing inside one can run. A stepped
 // figure shows its first frame, and each step adds the next frame on top. If a figure
-// can't be drawn, its text alternative shows in its place.
+// can't be drawn, its text alternative shows in its place. Every figure sits on a white
+// plate in both themes, since its own colours are drawn for a white ground.
 import { el } from './dom.js';
 
 export const svgDataUrl = (svg) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
@@ -12,7 +13,7 @@ export function figureView(figure) {
     box.classList.add('figure-box-sized');
     box.style.aspectRatio = `${figure.viewBox[2]} / ${figure.viewBox[3]}`;
   }
-  const node = el('figure', { class: 'figure' }, box);
+  const node = el('figure', { class: 'figure figure-plate' }, box);
   let shown = 0;
 
   const showAlt = () => {

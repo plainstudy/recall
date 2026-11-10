@@ -1,8 +1,12 @@
-// Start-up: the app with the browser's random source and clock, and the service worker,
-// registered under the engine version so a new version is a new worker.
+// Start-up: the theme the learner chose, then the app with the browser's random source and
+// clock, and the service worker, registered under the engine version so a new version is a
+// new worker.
 import { startApp } from './ui/controller.js';
 import { cryptoRandom, systemClock } from './ui/platform.js';
+import { applyTheme, storedTheme } from './ui/theme.js';
 import { ENGINE_VERSION } from './version.js';
+
+applyTheme(storedTheme());
 
 const root = document.getElementById('app');
 

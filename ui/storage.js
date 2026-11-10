@@ -69,6 +69,13 @@ function readMirror(key) {
   }
 }
 
+// The settings in the progress's second copy, read at once and without the database, so
+// the theme can be chosen before the first screen is drawn. Null when there are none.
+export function readMirroredSettings(scope = appScope()) {
+  const progress = readMirror(storageNames(scope).mirror);
+  return progress && progress.settings !== null && typeof progress.settings === 'object' ? progress.settings : null;
+}
+
 function writeMirror(key, progress) {
   try {
     localStorage.setItem(key, JSON.stringify(progress));

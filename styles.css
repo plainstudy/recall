@@ -1,20 +1,140 @@
-/* Night theme tokens. The day theme and the self-hosted fonts come later. */
+/* The app's look: two sets of colour tokens, Night and Day, the fonts, and the parts every
+   screen is built from. Phone, the default theme, follows the phone's own light or dark
+   setting; Settings can fix the theme with a data-theme mark on the page. Nothing is
+   inline. */
+
+/* ------------------------------------------------------------------------------ fonts */
+
+/* Self-hosted, Latin subset, each with its SIL Open Font License text beside it in fonts/. */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('fonts/manrope-latin-600-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/open-sans-latin-400-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('fonts/open-sans-latin-600-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/ibm-plex-mono-latin-400-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ----------------------------------------------------------------------------- tokens */
+
+/* Night: the default, and the theme of the splash screen. */
 :root {
   color-scheme: dark;
-  --ink: #0e1620;
-  --panel: #16202c;
-  --rule: #24313f;
-  --text: #d8e0e8;
-  --muted: #8494a4;
-  --running: #3fb08c; /* correct */
-  --slowdown: #e0a030; /* due; needs review */
-  --trip: #c0392b; /* wrong: marks and borders */
-  --trip-text: #e8604f; /* wrong: text */
+  --ink: #0B1826;
+  --panel: #14202E;
+  --rule: #24344A;
+  --border: #3A4F66;
+  --text: #F0F2F5;
+  --heading: #FFFFFF;
+  --muted: #A3B1C0;
+  --label: #B4C3D2;
+  --accent: #F0F2F5;
+  --on-accent: #14202E;
+  --accent-press: #D5DCE4;
+  --focus: #8DB6E0;
+  --line: #C0392B;
+  --running: #3FB08C;
+  --slowdown: #E0A030;
+  --trip: #C0392B;
+  --trip-text: #E8604F;
+  --tint-running: #14202E;
+  --tint-slowdown: #14202E;
+  --tint-trip: #14202E;
+}
+
+/* Day, when the phone is set to light and Settings leaves the theme to the phone. The same
+   values as the block below it; a unit test keeps the two the same. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+    --ink: #F4F7F6;
+    --panel: #FFFFFF;
+    --rule: #E3E8ED;
+    --border: #D7DDE2;
+    --text: #17222C;
+    --heading: #001B33;
+    --muted: #566270;
+    --label: #345068;
+    --accent: #003366;
+    --on-accent: #FFFFFF;
+    --accent-press: #001F3F;
+    --focus: #0A4D8C;
+    --line: #C0392B;
+    --running: #1D7A5C;
+    --slowdown: #8A5A00;
+    --trip: #B03224;
+    --trip-text: #B03224;
+    --tint-running: #E7F4EC;
+    --tint-slowdown: #FDF3E0;
+    --tint-trip: #FBECEB;
+  }
+}
+
+/* Day, when Settings fixes it; and every figure's plate, in either theme, since a figure's
+   own colours are drawn for a white ground. */
+:root[data-theme='day'],
+.figure-plate {
+  color-scheme: light;
+  --ink: #F4F7F6;
+  --panel: #FFFFFF;
+  --rule: #E3E8ED;
+  --border: #D7DDE2;
+  --text: #17222C;
+  --heading: #001B33;
+  --muted: #566270;
+  --label: #345068;
+  --accent: #003366;
+  --on-accent: #FFFFFF;
+  --accent-press: #001F3F;
+  --focus: #0A4D8C;
+  --line: #C0392B;
+  --running: #1D7A5C;
+  --slowdown: #8A5A00;
+  --trip: #B03224;
+  --trip-text: #B03224;
+  --tint-running: #E7F4EC;
+  --tint-slowdown: #FDF3E0;
+  --tint-trip: #FBECEB;
+}
+
+/* Sizes, faces and the one easing, the same in both themes. */
+:root {
   --tap: 48px;
   --gap: 8px;
-  --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
+  --font: 'Open Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --heading-font: 'Manrope', 'Open Sans', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+/* ------------------------------------------------------------------------------- base */
 
 *,
 *::before,
@@ -35,14 +155,24 @@ body {
   margin: 0;
   background: var(--ink);
   color: var(--text);
-  font: 18px/1.45 var(--font);
+  font: 400 18px/1.45 var(--font);
 }
 
 h1 {
   margin: 0 0 8px;
-  font-size: 24px;
-  line-height: 1.25;
-  font-weight: 600;
+  color: var(--heading);
+  font: 600 26px/1.2 var(--heading-font);
+}
+
+/* The title line: the short brick line under a screen's title, and brick's only use. */
+.screen-title::after {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 3px;
+  margin-top: 10px;
+  border-radius: 2px;
+  background: var(--line);
 }
 
 p,
@@ -55,6 +185,23 @@ code {
   font-family: var(--mono);
   font-size: 0.94em;
 }
+
+/* Section labels: capitals made here, so screen readers read the words. */
+h2,
+.label {
+  margin: 0 0 8px;
+  color: var(--label);
+  font: 600 12px/1.4 var(--font);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ----------------------------------------------------------------------------- layout */
 
 /* Screens: one column, the content at the top, the controls at the bottom. The element
    marked .push takes the free space above it, so what follows sits at the bottom. */
@@ -70,6 +217,22 @@ code {
 
 .screen > .push {
   margin-top: auto;
+}
+
+/* A screen other than a card rises into place as it opens. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.screen:not(.card-screen) {
+  animation: rise 0.25s var(--ease) both;
 }
 
 /* Text from content keeps its line breaks and never makes the page wider. */
@@ -93,20 +256,12 @@ code {
 .lead {
   margin-bottom: 16px;
   color: var(--muted);
+  font-size: 16px;
 }
 
 .version {
   color: var(--muted);
-  font-size: 15px;
-}
-
-.notice,
-.session-notice {
-  margin: 0 0 16px;
-  padding: 10px 12px;
-  border-left: 3px solid var(--slowdown);
-  background: var(--panel);
-  overflow-wrap: anywhere;
+  font-size: 16px;
 }
 
 /* The bar at the bottom: the screen's main button, always in the lower third. */
@@ -124,43 +279,46 @@ code {
   flex: 1 1 0;
 }
 
-/* Buttons. Every control is at least 48 px in both directions. */
+/* ---------------------------------------------------------------------------- buttons */
+
+/* Every control is at least 48 px in both directions. Pressed, a control changes colour
+   and nothing moves. */
 button {
   min-width: var(--tap);
   min-height: var(--tap);
   margin: 0;
   padding: 11px 14px;
-  border: 1px solid var(--rule);
-  border-radius: 8px;
-  background: var(--panel);
-  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--label);
   font: inherit;
-  text-align: left;
+  font-weight: 600;
+  text-align: center;
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-}
-
-button:focus-visible {
-  outline: 3px solid var(--text);
-  outline-offset: 2px;
+  transition:
+    background-color 0.15s var(--ease),
+    border-color 0.15s var(--ease),
+    color 0.15s var(--ease);
 }
 
 button:disabled {
-  color: var(--text);
   cursor: default;
 }
 
-.primary,
-.secondary {
-  font-weight: 600;
-  text-align: center;
+.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
-.primary {
-  border-color: var(--text);
-  background: var(--text);
-  color: var(--ink);
+.primary:active:not(:disabled),
+.secondary:active:not(:disabled) {
+  border-color: var(--accent-press);
+  background: var(--accent-press);
+  color: var(--on-accent);
 }
 
 .primary:disabled {
@@ -169,17 +327,121 @@ button:disabled {
   color: var(--muted);
 }
 
-/* Cards */
+.secondary {
+  background: transparent;
+  color: var(--label);
+}
+
+/* A choice among a few, such as the session length: outlined, and filled when chosen. */
+.toggle[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* ----------------------------------------------------------------------------- panels */
+
+.panel {
+  padding: 12px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 9px;
+  background: var(--panel);
+}
+
+/* Notices: a panel with a coloured edge. Day sets them on their tint. */
+.notice,
+.session-notice {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--slowdown);
+  border-radius: 9px;
+  background: var(--tint-slowdown);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+/* Markers: fully rounded chips, each on its tint. */
+.marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 10px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.marker-review {
+  background: var(--tint-slowdown);
+  color: var(--slowdown);
+}
+
+.marker-done {
+  background: var(--tint-running);
+  color: var(--running);
+}
+
+.marker .icon {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+/* ----------------------------------------------------------------------------- fields */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+label {
+  color: var(--label);
+  font-weight: 600;
+}
+
+input[type='text'],
+input[type='search'],
+select {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+}
+
+input[aria-invalid='true'] {
+  border-color: var(--trip);
+}
+
+.field-problem {
+  color: var(--trip-text);
+  font-size: 16px;
+}
+
+.field-problem:empty {
+  display: none;
+}
+
+/* ------------------------------------------------------------------------------ cards */
+
 .card-place {
   margin-bottom: 12px;
   color: var(--muted);
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .card-term {
   margin-bottom: 8px;
-  font-size: 22px;
-  font-weight: 600;
+  color: var(--heading);
+  font: 600 22px/1.3 var(--heading-font);
 }
 
 .prompt {
@@ -190,14 +452,22 @@ button:disabled {
   margin-bottom: 12px;
   padding: 12px;
   border: 1px solid var(--rule);
-  border-left: 3px solid var(--muted);
-  border-radius: 4px;
+  border-left: 3px solid var(--label);
+  border-radius: 9px;
   background: var(--panel);
   font-size: 17px;
 }
 
+/* Figures sit on a white plate in both themes; the plate carries the Day tokens. */
 .figure {
   margin: 0 0 12px;
+}
+
+.figure-plate {
+  padding: 8px;
+  border-radius: 9px;
+  background: var(--panel);
+  color: var(--text);
 }
 
 .figure-box {
@@ -220,9 +490,9 @@ button:disabled {
 }
 
 .figure-alt {
-  margin: 0 0 12px;
+  margin: 0;
   padding: 12px;
-  border: 1px dashed var(--rule);
+  border: 1px dashed var(--border);
   color: var(--muted);
 }
 
@@ -240,7 +510,8 @@ button:disabled {
   padding-top: 16px;
 }
 
-/* Answer controls */
+/* ---------------------------------------------------------------------------- answers */
+
 .options,
 .order-list {
   display: flex;
@@ -248,6 +519,7 @@ button:disabled {
   gap: var(--gap);
 }
 
+/* Each answer is a panel. */
 .option,
 .item,
 .match-item,
@@ -255,6 +527,12 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 10px;
+  border-color: var(--border);
+  border-radius: 9px;
+  background: var(--panel);
+  color: var(--text);
+  font-weight: 400;
+  text-align: left;
 }
 
 .option,
@@ -267,13 +545,13 @@ button:disabled {
   min-width: 0;
 }
 
-/* Single choice looks like a radio button, multiple choice like a checkbox. */
+/* Single choice shows a ring, multiple choice a box, in the label colour. */
 .option::before {
   content: '';
   flex: none;
   width: 18px;
   height: 18px;
-  border: 2px solid var(--muted);
+  border: 2px solid var(--label);
   border-radius: 50%;
 }
 
@@ -281,29 +559,26 @@ button:disabled {
   border-radius: 4px;
 }
 
+/* Chosen: the ring or box fills, and the outline thickens to 2 px without moving anything. */
 .option[aria-pressed='true'],
 .item[aria-pressed='true'],
 .chip[aria-pressed='true'],
 .match-item[aria-pressed='true'] {
-  border-color: var(--text);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
 .option[aria-pressed='true']::before {
-  border-color: var(--text);
-  background: var(--text);
+  border-color: var(--accent);
+  background: var(--accent);
   box-shadow: inset 0 0 0 3px var(--panel);
-}
-
-.match-item[aria-pressed='true'],
-.chip[aria-pressed='true'] {
-  background: var(--rule);
 }
 
 .option-note {
   display: block;
   margin-top: 4px;
   color: var(--muted);
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .pair-mark,
@@ -315,8 +590,8 @@ button:disabled {
   height: 26px;
   padding: 0 6px;
   border-radius: 13px;
-  background: var(--text);
-  color: var(--ink);
+  background: var(--accent);
+  color: var(--on-accent);
   font-size: 15px;
   font-weight: 600;
 }
@@ -352,14 +627,14 @@ button:disabled {
 }
 
 .match-item.paired {
-  border-color: var(--muted);
+  border-color: var(--label);
 }
 
 .order-divider {
   width: 100%;
   margin: 2px 0;
   border: 0;
-  border-top: 1px dashed var(--rule);
+  border-top: 1px dashed var(--border);
 }
 
 .chips {
@@ -377,7 +652,7 @@ button:disabled {
   display: inline-block;
   min-width: 4.5em;
   padding: 0 4px;
-  border-bottom: 2px solid var(--muted);
+  border-bottom: 2px solid var(--label);
   font-weight: 600;
   text-align: center;
 }
@@ -392,14 +667,14 @@ button:disabled {
   color: var(--trip-text);
 }
 
-/* Hotspot regions, drawn over the figure. */
+/* Hotspot regions, drawn over the figure on its plate, so in the Day colours. */
 .regions {
   overflow: visible;
 }
 
 .region {
   fill: transparent;
-  stroke: var(--muted);
+  stroke: var(--label);
   stroke-width: 2;
   stroke-dasharray: 6 4;
   vector-effect: non-scaling-stroke;
@@ -411,40 +686,43 @@ button:disabled {
 }
 
 .region:focus-visible {
-  stroke: var(--text);
+  stroke: var(--focus);
   stroke-width: 3;
 }
 
 .region[aria-pressed='true'] {
-  fill: rgba(216, 224, 232, 0.18);
-  stroke: var(--text);
+  fill: color-mix(in srgb, var(--accent) 15%, transparent);
+  stroke: var(--accent);
   stroke-dasharray: none;
 }
 
 .region.region-right {
-  fill: rgba(63, 176, 140, 0.25);
+  fill: color-mix(in srgb, var(--running) 22%, transparent);
   stroke: var(--running);
   stroke-dasharray: none;
 }
 
 .region.region-wrong {
-  fill: rgba(192, 57, 43, 0.25);
+  fill: color-mix(in srgb, var(--trip) 22%, transparent);
   stroke: var(--trip);
   stroke-dasharray: none;
 }
 
-/* Marks after Check: colour and an icon together. */
-.mark-right {
+/* Marks after Check: colour and an icon together, never colour alone. */
+.card-answers .mark-right {
   border-color: var(--running);
+  box-shadow: 0 0 0 1px var(--running);
 }
 
-.mark-missed {
+.card-answers .mark-missed {
   border-color: var(--running);
   border-style: dashed;
+  box-shadow: none;
 }
 
-.mark-wrong {
+.card-answers .mark-wrong {
   border-color: var(--trip);
+  box-shadow: 0 0 0 1px var(--trip);
 }
 
 .icon {
@@ -453,6 +731,7 @@ button:disabled {
   height: 22px;
   margin-left: auto;
   fill: none;
+  stroke: currentColor;
   stroke-width: 2.5;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -492,13 +771,14 @@ button:disabled {
   flex-direction: column;
   gap: 6px;
   padding: 12px;
-  border-radius: 8px;
+  border: 1px solid var(--rule);
+  border-radius: 9px;
   background: var(--panel);
 }
 
 .answer-key-title {
   color: var(--muted);
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .answer-key-list {
@@ -519,7 +799,8 @@ ul.answer-key-list {
   gap: var(--gap);
 }
 
-/* Lessons and summary */
+/* ---------------------------------------------------------------------------- lessons */
+
 .lesson-list {
   display: flex;
   flex-direction: column;
@@ -537,7 +818,7 @@ ul.answer-key-list {
   min-height: var(--tap);
   padding: 10px 12px;
   border: 1px solid var(--rule);
-  border-radius: 8px;
+  border-radius: 9px;
   background: var(--panel);
 }
 
@@ -555,13 +836,9 @@ ul.answer-key-list {
   color: var(--muted);
 }
 
-.lesson-marker.lesson-marker-completed {
-  color: var(--running);
-}
-
 .lesson-number {
   color: var(--muted);
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .lesson-title {
@@ -570,60 +847,27 @@ ul.answer-key-list {
 
 .lesson-marker {
   color: var(--slowdown);
-  font-size: 15px;
+  font-size: 16px;
+}
+
+.lesson-marker.lesson-marker-completed {
+  color: var(--running);
+}
+
+.lesson-current {
+  border-color: var(--accent);
+}
+
+.lesson-marker-current {
+  color: var(--text);
+  font-weight: 600;
 }
 
 .summary-line {
   font-size: 20px;
 }
 
-/* Phase 2 screens: first run, the start screen, Import and the questions. */
-h2 {
-  margin: 0 0 8px;
-  color: var(--muted);
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
-}
-
-label {
-  font-weight: 600;
-}
-
-input[type='text'] {
-  width: 100%;
-  min-height: var(--tap);
-  padding: 10px 12px;
-  border: 1px solid var(--rule);
-  border-radius: 8px;
-  background: var(--panel);
-  color: var(--text);
-  font: inherit;
-}
-
-input[type='text']:focus-visible {
-  outline: 3px solid var(--text);
-  outline-offset: 2px;
-}
-
-input[aria-invalid='true'] {
-  border-color: var(--trip);
-}
-
-.field-problem {
-  color: var(--trip-text);
-  font-size: 15px;
-}
-
-.field-problem:empty {
-  display: none;
-}
+/* ------------------------------------------------------- the start screen and its parts */
 
 .learner,
 .installed-name,
@@ -652,18 +896,6 @@ input[aria-invalid='true'] {
 
 .pack-heading {
   margin: 8px 0 0;
-  color: var(--muted);
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.lesson-current {
-  border-color: var(--text);
-}
-
-.lesson-marker-current {
-  color: var(--text);
-  font-weight: 600;
 }
 
 .track-stop {
@@ -722,6 +954,7 @@ input[aria-invalid='true'] {
 .refusal {
   margin-top: 8px;
   border-left-color: var(--trip);
+  background: var(--tint-trip);
 }
 
 .refusal-more,
@@ -729,7 +962,6 @@ input[aria-invalid='true'] {
   color: var(--muted);
 }
 
-/* Phase 3 screens: the day's facts, the session length, the session and its summary. */
 .today {
   display: flex;
   flex-direction: column;
@@ -754,12 +986,12 @@ input[aria-invalid='true'] {
 .length {
   flex: 1 1 0;
   padding: 11px 4px;
-  text-align: center;
 }
 
 .length[aria-pressed='true'] {
-  border-color: var(--text);
-  font-weight: 600;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 .card-top {
@@ -790,4 +1022,16 @@ input[aria-invalid='true'] {
   flex-direction: column;
   gap: var(--gap);
   padding-top: 24px;
+}
+
+/* ----------------------------------------------------------------------------- motion */
+
+/* With reduced motion asked for, nothing moves and nothing fades; focus stays visible. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }

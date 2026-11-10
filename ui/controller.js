@@ -21,6 +21,7 @@ import { sessionRunner } from './session-runner.js';
 import { startScreen } from './start-screen.js';
 import { openStorage } from './storage.js';
 import { summaryScreen } from './summary-screen.js';
+import { applyTheme } from './theme.js';
 
 export const CONTROLLER_MESSAGES = {
   notSaved: "The change couldn't be saved, so nothing was changed. Close the app fully and try again.",
@@ -42,6 +43,7 @@ export async function startApp(root, { version, random, clock }) {
   let catalogue = catalogueOf(content);
   let progress = await storage.readProgress(random);
   let record = await storage.readSession();
+  applyTheme(progress ? progress.settings.theme : 'phone');
   let away = false;
   let notice = null;
   let busy = false;
@@ -334,6 +336,7 @@ export async function startApp(root, { version, random, clock }) {
         const restored = restoredProgress(progress, plan.fromReport, clock, version);
         await storage.writeProgress(restored, { clearSession: true });
         progress = restored;
+        applyTheme(progress.settings.theme);
       } else {
         const next = progressAfter(progress, plan.nextContent, clock, version);
         await storage.applyContent(plan.writes, next);
@@ -437,6 +440,7 @@ export async function startApp(root, { version, random, clock }) {
               setContent(emptyContent());
               progress = null;
               record = null;
+              applyTheme('phone');
               home();
             }),
           },

@@ -19,6 +19,10 @@ const PAGE = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
+  './fonts/ibm-plex-mono-latin-400-normal.woff2',
+  './fonts/manrope-latin-600-normal.woff2',
+  './fonts/open-sans-latin-400-normal.woff2',
+  './fonts/open-sans-latin-600-normal.woff2',
   './engine/assemble.js',
   './engine/cards.js',
   './engine/catalogue.js',
@@ -62,6 +66,7 @@ const PAGE = [
   './ui/start-screen.js',
   './ui/storage.js',
   './ui/summary-screen.js',
+  './ui/theme.js',
 ];
 
 self.addEventListener('install', (event) => {
