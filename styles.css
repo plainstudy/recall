@@ -46,7 +46,7 @@
 
 /* Night: the default, and the theme of the splash screen. */
 :root {
-  color-scheme: dark;
+  color-scheme: only dark;
   --ink: #0B1826;
   --panel: #14202E;
   --rule: #24344A;
@@ -73,7 +73,7 @@
    values as the block below it; a unit test keeps the two the same. */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) {
-    color-scheme: light;
+    color-scheme: only light;
     --ink: #F4F7F6;
     --panel: #FFFFFF;
     --rule: #E3E8ED;
@@ -101,7 +101,7 @@
    own colours are drawn for a white ground. */
 :root[data-theme='day'],
 .figure-plate {
-  color-scheme: light;
+  color-scheme: only light;
   --ink: #F4F7F6;
   --panel: #FFFFFF;
   --rule: #E3E8ED;

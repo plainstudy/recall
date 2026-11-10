@@ -79,7 +79,8 @@ export function sessionRunner({ show, presentations, context, store, onProgress,
           answer: passed.answer,
           actions: [
             { label: 'Previous', disabled: i === 0, onclick: () => lookBack(current, i - 1) },
-            { label: 'Next', disabled: i === done.length - 1, onclick: () => lookBack(current, i + 1) },
+            // From the last card passed, Next goes on to the card left, as Back does.
+            { label: 'Next', onclick: () => (i === done.length - 1 ? run === current && show(current.screen) : lookBack(current, i + 1)) },
             { label: 'Back', primary: true, onclick: () => run === current && show(current.screen) },
           ],
         },

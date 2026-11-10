@@ -91,7 +91,11 @@ test('acceptance test 35: the card row fills each square as its card is done, an
   await expect(review).toHaveAttribute('data-card-id', played[1]);
   await next.click();
   await expect(review).toHaveAttribute('data-card-id', played[2]);
-  await expect(next).toBeDisabled();
+  // From the last card passed, Next goes on to the card left.
+  await next.click();
+  await expect(page.locator('.card-review')).toHaveCount(0);
+  await expect(page.locator('.card-screen')).toHaveAttribute('data-card-id', current);
+  await squares.nth(wrongAt).click();
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page.locator('.card-review')).toHaveCount(0);
   await expect(page.locator('.card-screen')).toHaveAttribute('data-card-id', current);
