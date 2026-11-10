@@ -1,3 +1,3 @@
 // The engine version: shown in the app, carried by the service worker's cache name,
 // and raised with every published change.
-export const ENGINE_VERSION = '0.3.0';
+export const ENGINE_VERSION = '1.0.0';
