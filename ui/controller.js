@@ -30,6 +30,7 @@ import { appScope, openStorage } from './storage.js';
 import { summaryScreen } from './summary-screen.js';
 import { termScreen } from './term-screen.js';
 import { applyTheme } from './theme.js';
+import { watchForUpdates } from './updates.js';
 
 export const CONTROLLER_MESSAGES = {
   notSaved: "The change couldn't be saved, so nothing was changed. Close the app fully and try again.",
@@ -57,6 +58,15 @@ export async function startApp(root, { version, random, clock }) {
   let onlyReview = false; // the Library's filter
   // The Glossary's search and filters, kept while the app runs.
   const glossaryState = { query: '', domain: null, family: null, category: null, showRetired: false };
+  // A newer version ready to start, offered on Home only, so never during a session.
+  let updateReady = null;
+  const updates = watchForUpdates({
+    version,
+    onReady: (next) => {
+      updateReady = next;
+      if (nav.depth === 0 && sessionLevel === null && progress) showHome();
+    },
+  });
 
   // Erase closes the database; it opens again only when there is something to keep.
   const store = async () => {
@@ -206,9 +216,12 @@ export async function startApp(root, { version, random, clock }) {
     runner.start({ progress, session });
   }
 
-  // The streak and the counts are worked out again whenever the app comes back on screen.
+  // The streak and the counts are worked out again whenever the app comes back on screen,
+  // and a newer version is looked for.
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && nav.depth === 0 && sessionLevel === null && progress) showHome();
+    if (document.visibilityState !== 'visible') return;
+    if (nav.depth === 0 && sessionLevel === null && progress) showHome();
+    updates.check();
   });
 
   const startDaily = once(async () => {
@@ -326,6 +339,7 @@ export async function startApp(root, { version, random, clock }) {
         learner: progress.profile.name,
         streak: progress.streak,
         overview: overviewOf({ progress, catalogue, day: today, record }),
+        update: updateReady ? { line: OVERVIEW_TEXT.updateReady(updateReady), onRestart: () => updates.restart() } : null,
         notice: message,
         onSession: startDaily,
         onPlace: goPlace,
@@ -607,4 +621,5 @@ export async function startApp(root, { version, random, clock }) {
   }
 
   await showHome();
+  updates.check();
 }

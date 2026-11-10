@@ -1,8 +1,12 @@
-// The service worker. On install it caches the app's shell under a cache named for the
-// engine version and this worker's scope, fetching each file past the HTTP cache so two
-// versions never mix. On activate it deletes its older caches for the same scope, leaving
-// other sites on the origin alone. It answers from the network when it can and from the
-// cache when it cannot.
+// The service worker. On install it fetches the app's shell past the HTTP cache and keeps
+// it under a cache named for the engine version and this worker's scope. It installs only
+// when the version.js it fetched names its own version, so no worker ever fills a cache
+// with another version's files. It serves the shell from that cache first, so the app
+// opens at once on a weak signal or none, and a navigation falls back to the cached page.
+// A newer version's worker waits until the app is next started cold, or until the learner
+// taps Restart; one that replaces a worker from before 1.0.0, which served from the
+// network first, takes over at once. On activate it deletes its older caches for the same
+// scope, leaving other sites on the origin alone.
 const VERSION = new URL(self.location.href).searchParams.get('v') || 'unversioned';
 const SCOPE = self.registration.scope;
 const PREFIX = 'engine-';
@@ -77,14 +81,41 @@ const PAGE = [
   './ui/summary-screen.js',
   './ui/term-screen.js',
   './ui/theme.js',
+  './ui/updates.js',
 ];
+
+// The version a version.js file names, or null.
+const versionIn = (text) => {
+  const m = /ENGINE_VERSION\s*=\s*'([^']+)'/.exec(text);
+  return m ? m[1] : null;
+};
+
+// True for a worker from before 1.0.0, or one with no version: those served from the
+// network first, so the page already running is the new version's.
+function servedFromNetwork(worker) {
+  if (!worker) return false;
+  const v = new URL(worker.scriptURL).searchParams.get('v');
+  return !(v && Number(v.split('.')[0]) >= 1);
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((cache) => cache.addAll(PAGE.map((path) => new Request(path, { cache: 'reload' }))))
-      .then(() => self.skipWaiting()),
+    (async () => {
+      const fetched = await Promise.all(
+        PAGE.map(async (path) => {
+          const request = new Request(path, { cache: 'reload' });
+          const response = await fetch(request);
+          if (!response.ok) throw new Error(`${path} answered ${response.status}`);
+          return [request, response];
+        }),
+      );
+      const [, versionFile] = fetched.find(([request]) => new URL(request.url).pathname.endsWith('/version.js'));
+      const served = versionIn(await versionFile.clone().text());
+      if (served !== VERSION) throw new Error(`the published version is ${served}, not ${VERSION}`);
+      const cache = await caches.open(CACHE);
+      await Promise.all(fetched.map(([request, response]) => cache.put(request, response)));
+      if (servedFromNetwork(self.registration.active)) await self.skipWaiting();
+    })(),
   );
 });
 
@@ -103,19 +134,27 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// Restart, from Home: the waiting worker takes over.
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'skip-waiting') self.skipWaiting();
+});
+
 async function fromCache(request) {
   const cache = await caches.open(CACHE);
   const hit = await cache.match(request, { ignoreSearch: true });
   if (hit) return hit;
   if (request.mode === 'navigate') {
-    const page = await cache.match('./');
+    const page = (await cache.match('./index.html')) || (await cache.match('./'));
     if (page) return page;
   }
-  return Response.error();
+  return fetch(request);
 }
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
-  event.respondWith(fetch(request).catch(() => fromCache(request)));
+  const url = new URL(request.url);
+  if (request.method !== 'GET' || url.origin !== self.location.origin) return;
+  // The update check asks the network which version is published, always.
+  if (url.searchParams.has('check')) return;
+  event.respondWith(fromCache(request));
 });
