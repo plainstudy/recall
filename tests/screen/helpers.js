@@ -199,6 +199,13 @@ export async function done(page) {
   await expect(page.locator('.home-screen, .library-screen')).toBeVisible();
 }
 
+// End session, from the menu at the end of the card row: its question shows.
+export async function openEndQuestion(page) {
+  await page.getByRole('button', { name: 'Session menu', exact: true }).click();
+  await page.locator('.sheet').getByRole('button', { name: 'End session', exact: true }).click();
+  await expect(page.locator('.end-question')).toBeVisible();
+}
+
 // Home's streak scorecards: the streak, the longest and the freezes left.
 export async function expectStreak(page, current, longest, freezes) {
   await expect(page.locator('.scorecard-streak')).toHaveAttribute('data-value', String(current));

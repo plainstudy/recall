@@ -38,6 +38,12 @@ export function mountCloze(card, lists, { body, answers, changed }) {
 
   return {
     answer: () => (chosen === null ? null : { choice: chosen }),
+    // An answer given earlier, shown again as it was chosen.
+    restore(given) {
+      chosen = given && given.choice != null && buttons.has(String(given.choice)) ? String(given.choice) : null;
+      for (const [other, button] of buttons) button.setAttribute('aria-pressed', String(other === chosen));
+      gap.replaceChildren(...(chosen === null ? [] : richText(byId.get(chosen).text)));
+    },
     reveal(score) {
       locked = true;
       for (const [id, button] of buttons) {

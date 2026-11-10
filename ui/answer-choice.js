@@ -35,6 +35,12 @@ export function mountChoice(card, lists, { answers, changed }) {
       if (chosen.size === 0) return null;
       return multiple ? { choices: [...chosen] } : { choice: [...chosen][0] };
     },
+    // An answer given earlier, shown again as it was chosen.
+    restore(given) {
+      chosen.clear();
+      for (const id of multiple ? given.choices || [] : [given.choice]) if (buttons.has(String(id))) chosen.add(String(id));
+      for (const [other, button] of buttons) button.setAttribute('aria-pressed', String(chosen.has(other)));
+    },
     reveal(score) {
       locked = true;
       for (const [id, button] of buttons) {

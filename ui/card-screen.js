@@ -1,6 +1,9 @@
-// One card on the screen, top to bottom: its place in the lesson, its content, the
-// answers, the verdict and explanation once checked, and the bar with the one button.
-// The answers sit directly above the bar, so the nearest are always under the thumb.
+// One card on the screen, top to bottom: the card row and the session menu, the card's
+// content, the answers, the verdict and explanation once checked, and the bar with its
+// button. The answers sit directly above the bar, so the nearest are always under the
+// thumb. A card passed earlier in the session can be opened again, read-only, as it was
+// answered: its lists in the order they were shown, the answer given, the marks, the
+// verdict and the explanation.
 import { explanationFor, scoreAnswer, verdictFor } from '../engine/scoring.js';
 import { mountChoice } from './answer-choice.js';
 import { mountCloze } from './answer-cloze.js';
@@ -30,32 +33,38 @@ function bringIntoView(result) {
   window.scrollTo(0, Math.max(window.scrollY, Math.min(bottom, top - 16)));
 }
 
-// card: read by the engine. lists: this presentation's orders. onAnswered({ correct, trap,
-// answer, score }) runs once, at Check, with the answer as given and how it scored.
-// onContinue runs when the learner moves on. onEnd, when given, puts End session at the top.
-export function cardScreen({ card, lists, place, onAnswered, onContinue, onEnd = null }) {
+// card: read by the engine. lists: the orders its lists are shown in. top: what goes
+// across the top, the card row and the menu button. onAnswered({ correct, trap, answer,
+// score }) runs once, at Check, with the answer as given and how it scored; onContinue
+// runs when the learner moves on.
+// review: null, or { heading, answer, actions: [{ label, onclick, disabled }] } to show the
+// card read-only, as it was answered, with these buttons in the bar.
+export function cardScreen({ card, lists, top = null, onAnswered = () => {}, onContinue = () => {}, review = null }) {
   const body = el('div', { class: 'card-body' });
   const answers = el('div', { class: 'card-answers push' });
-  const result = el('div', { class: 'card-result', 'aria-live': 'polite' });
+  const result = el('div', { class: 'card-result', 'aria-live': review ? null : 'polite' });
   const action = el('button', { type: 'button', class: 'primary' });
+  const bar = el('div', { class: 'action-bar' }, action);
   const screen = el(
     'section',
     {
-      class: 'screen card-screen',
+      class: `screen card-screen${review ? ' card-review' : ''}`,
       'data-card-type': card.type || 'unknown',
       'data-card-id': card.cardId == null ? '' : String(card.cardId),
     },
-    el(
-      'div',
-      { class: 'card-top' },
-      el('p', { class: 'card-place', text: place }),
-      onEnd ? el('button', { type: 'button', class: 'secondary end-session', text: 'End session', onclick: onEnd }) : null,
-    ),
+    top,
+    review ? el('p', { class: 'card-place looking-back', text: review.heading }) : null,
     body,
     answers,
     result,
-    el('div', { class: 'action-bar' }, action),
+    bar,
   );
+
+  if (review) {
+    bar.replaceChildren(
+      ...review.actions.map((a) => el('button', { type: 'button', class: a.primary ? 'primary' : 'secondary', text: a.label, disabled: a.disabled || null, onclick: a.onclick })),
+    );
+  }
 
   const showContinue = () => {
     action.textContent = 'Continue';
@@ -66,7 +75,21 @@ export function cardScreen({ card, lists, place, onAnswered, onContinue, onEnd =
   const cannotShow = (message) => {
     body.replaceChildren(el('p', { class: 'notice', text: message }));
     answers.replaceChildren();
-    showContinue();
+    if (!review) showContinue();
+  };
+
+  // The verdict, any answer key and the explanation, after Check or when looking back.
+  const showResult = (score, answer, key) => {
+    result.append(
+      el(
+        'p',
+        { class: `verdict ${score.correct ? 'verdict-right' : 'verdict-wrong'}` },
+        icon(score.correct ? 'right' : 'wrong'),
+        el('span', { text: verdictFor(card, score.correct) }),
+      ),
+    );
+    if (key) result.append(key);
+    for (const part of explanationFor(card, answer, score.correct)) result.append(textBlock('p', 'explanation', part));
   };
 
   if (card.unshowable) {
@@ -79,7 +102,10 @@ export function cardScreen({ card, lists, place, onAnswered, onContinue, onEnd =
       body.append(textBlock('p', 'prompt', card.prompt));
       const figure = card.resolvedFigure ? figureView(card.resolvedFigure) : null;
       if (figure) body.append(figure.node);
-      if (figure && figure.hasMore()) {
+      if (review) {
+        // Read again: every step of a stepped figure at once.
+        while (figure && figure.hasMore()) figure.showNext();
+      } else if (figure && figure.hasMore()) {
         action.textContent = 'Show next';
         action.onclick = () => {
           figure.showNext();
@@ -102,23 +128,24 @@ export function cardScreen({ card, lists, place, onAnswered, onContinue, onEnd =
       action.disabled = !renderer || renderer.answer() === null;
     };
     renderer = MOUNT[card.type](card, lists, { body, answers, changed: update });
+
+    if (review) {
+      // Looking back draws no new order and changes nothing: the answer as it was given.
+      if (review.answer) {
+        renderer.restore(review.answer);
+        const score = scoreAnswer(card, review.answer);
+        showResult(score, review.answer, renderer.reveal(score));
+      }
+      return screen;
+    }
+
     action.textContent = 'Check';
     update();
     action.onclick = () => {
       const answer = renderer.answer();
       if (!answer) return;
       const score = scoreAnswer(card, answer);
-      const key = renderer.reveal(score);
-      result.append(
-        el(
-          'p',
-          { class: `verdict ${score.correct ? 'verdict-right' : 'verdict-wrong'}` },
-          icon(score.correct ? 'right' : 'wrong'),
-          el('span', { text: verdictFor(card, score.correct) }),
-        ),
-      );
-      if (key) result.append(key);
-      for (const part of explanationFor(card, answer, score.correct)) result.append(textBlock('p', 'explanation', part));
+      showResult(score, answer, renderer.reveal(score));
       showContinue();
       onAnswered({ correct: score.correct, trap: card.trap === true, answer, score });
       bringIntoView(result);

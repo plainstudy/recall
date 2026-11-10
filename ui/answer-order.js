@@ -57,6 +57,11 @@ export function mountOrder(card, lists, { answers, changed }) {
 
   return {
     answer: () => (placed.length === lists.items.length ? { sequence: [...placed] } : null),
+    // An answer given earlier, its sequence shown again as it was built.
+    restore(given) {
+      placed.splice(0, placed.length, ...(given.sequence || []).map(String).filter((id) => buttons.has(id)));
+      render();
+    },
     reveal(score) {
       locked = true;
       score.sequence.forEach(({ id, ok }) => {

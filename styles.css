@@ -1155,20 +1155,101 @@ ul.answer-key-list {
   color: var(--muted);
 }
 
-.card-top {
+/* The card row and the menu button across the top of a card. The row is one control, at
+   least 48 px tall; its squares are drawings inside it. */
+.session-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--gap);
   margin-bottom: 12px;
 }
 
-.card-top .card-place {
-  margin-bottom: 0;
+.card-row {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  min-width: 0;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
 }
 
-.end-session {
-  flex: 0 0 auto;
+.squares {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+
+.square {
+  flex: 1 1 0;
+  max-width: 18px;
+  height: 14px;
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+}
+
+.square-right {
+  border-color: var(--running);
+  background: var(--running);
+}
+
+.square-wrong {
+  border-color: var(--trip);
+  background: var(--trip);
+}
+
+.square-read {
+  border-color: var(--muted);
+  background: var(--muted);
+}
+
+/* The square of the card on screen: a heavier outline. */
+.square-showing {
+  outline: 2px solid var(--heading);
+  outline-offset: 1px;
+}
+
+.menu-button {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--tap);
+  padding: 0;
+}
+
+.menu-button .icon {
+  margin: 0;
+  stroke-width: 4;
+}
+
+.looking-back {
+  margin-bottom: 8px;
+}
+
+/* The session menu: a short sheet at the bottom of the screen, within thumb reach. */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.sheet {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px 16px max(16px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--rule);
+  border-radius: 9px 9px 0 0;
+  background: var(--panel);
+  animation: rise 0.25s var(--ease) both;
 }
 
 .summary-lines {

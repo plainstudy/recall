@@ -55,6 +55,15 @@ test('the next day the reviews come up, mixed into the lesson, and the streak re
     'Streak 2, longest 2, freezes left 2.',
     'The next review is due tomorrow.',
   ]);
+  // The one moment: a mark for each review that moved up, right under its line, each
+  // shifting up once; with reduced motion asked for, they hold still.
+  const marks = page.locator('.summary-line:nth-child(3) + .moved-up .moved-up-mark');
+  await expect(marks).toHaveCount(8);
+  const motion = () => marks.first().evaluate((node) => [getComputedStyle(node).animationName, getComputedStyle(node).animationIterationCount]);
+  expect(await motion()).toEqual(['none', '1']);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  expect(await motion()).toEqual(['moved-up', '1']);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
 
   const { progress } = await readStored(page);
   const second = addDays(first, 1);

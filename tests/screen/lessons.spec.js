@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { cardsOf, done, expectStreak, firstRun, gotoPlace, install, pinClock, playSession, readFixturePack, readStored, redoLesson } from './helpers.js';
+import { cardsOf, done, expectStreak, firstRun, gotoPlace, install, openEndQuestion, pinClock, playSession, readFixturePack, readStored, redoLesson } from './helpers.js';
 
 // These tests play whole sessions card by card, so each gets more than the usual time.
 test.describe.configure({ timeout: 90_000 });
@@ -61,7 +61,7 @@ test('a redo replays every card in order, leaves the position and the streak alo
   const before = (await readStored(page)).progress;
 
   await redoLesson(page, 1);
-  await expect(page.locator('.card-place')).toHaveText('Card 1 of 10');
+  await expect(page.locator('.card-row')).toHaveAttribute('aria-label', /^Card 1 of 10:/);
   const played = await playSession(page, cards);
   expect(played).toEqual(lesson.cards.map((card) => card.cardId));
   const summary = page.locator('.summary-screen');
@@ -101,7 +101,7 @@ test('a wrong answer in a redo comes back within it, and a redo beside an unfini
   // An unfinished daily session, two cards in.
   await button(page).click();
   await playSession(page, cards, { upTo: 2 });
-  await page.getByRole('button', { name: 'End session', exact: true }).click();
+  await openEndQuestion(page);
   await page.locator('.end-question').getByRole('button', { name: 'End session', exact: true }).click();
   await expect(button(page)).toHaveText("Continue today's session");
   const waiting = (await readStored(page)).session;
@@ -114,7 +114,7 @@ test('a wrong answer in a redo comes back within it, and a redo beside an unfini
   expect(at).toBe(3);
 
   // Leaving a redo ends it; the question says so, and nothing of it is stored as a record.
-  await page.getByRole('button', { name: 'End session', exact: true }).click();
+  await openEndQuestion(page);
   await expect(page.locator('.end-question .question-text p')).toHaveText(['End this redo?', 'Your answers are saved.']);
   await page.locator('.end-question').getByRole('button', { name: 'End session', exact: true }).click();
   await expect(page.locator('.library-screen')).toBeVisible();

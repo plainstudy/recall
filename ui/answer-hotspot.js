@@ -54,6 +54,11 @@ export function mountHotspot(card, lists, { body, changed }) {
 
   return {
     answer: () => (chosen === null ? null : { choice: chosen }),
+    // An answer given earlier, shown again as it was chosen.
+    restore(given) {
+      chosen = given && given.choice != null && shapes.has(String(given.choice)) ? String(given.choice) : null;
+      for (const [other, node] of shapes) node.setAttribute('aria-pressed', String(other === chosen));
+    },
     reveal(score) {
       locked = true;
       for (const [id, node] of shapes) {

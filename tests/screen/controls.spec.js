@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { cardsOf, chooseFile, done, expectControlsSized, expectFootInLowerThird, firstRun, gotoPlace, install, pinClock, playSession, redoLesson } from './helpers.js';
+import { cardsOf, chooseFile, done, expectControlsSized, expectFootInLowerThird, firstRun, gotoPlace, install, openEndQuestion, pinClock, playSession, redoLesson } from './helpers.js';
 
 for (const scheme of ['dark', 'light']) {
   test(`acceptance test 11 (${scheme}): every control on the places, a session and its summary is at least 48 px and 8 px apart, the main action and the navigation bar in the lower third`, async ({
@@ -31,7 +31,7 @@ for (const scheme of ['dark', 'light']) {
     await playSession(page, cards, { upTo: 1 });
     await expect(page.locator('.card-screen')).toHaveAttribute('data-card-id', 'bk_l01_c02');
     await expectControlsSized(page);
-    await page.getByRole('button', { name: 'End session', exact: true }).click();
+    await openEndQuestion(page);
     await expect(page.locator('.end-question')).toBeVisible();
     await expectControlsSized(page);
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();

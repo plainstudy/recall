@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { DAY_MS, answer, cardsOf, done, expectStreak, firstRun, gotoPlace, install, pinClock, playSession, readStored, watchErrors } from './helpers.js';
+import { DAY_MS, answer, cardsOf, done, expectStreak, firstRun, gotoPlace, install, openEndQuestion, pinClock, playSession, readStored, watchErrors } from './helpers.js';
 
 // These tests play whole sessions card by card, so each gets more than the usual time.
 test.describe.configure({ timeout: 90_000 });
@@ -40,7 +40,7 @@ test('a daily session from Start to the summary, then Start another session', as
 
   await gotoPlace(page, 'Home');
   await start(page);
-  await expect(page.locator('.card-place')).toHaveText('Card 1 of 10');
+  await expect(page.locator('.card-row')).toHaveAttribute('aria-label', /^Card 1 of 10:/);
   const first = await playSession(page, cards);
   expect(first).toEqual(['c01', 'c02', 'c03', 'c04', 'c05', 'c06', 'c09', 'c07', 'c10', 'c08'].map((c) => `bk_l01_${c}`));
   await expect(page.locator('.summary-screen')).toHaveAttribute('data-kind', 'daily');
@@ -156,11 +156,11 @@ test('End session asks first, keeps the answers, and Continue carries on at the 
   await playSession(page, cards, { upTo: 3 });
   const screen = page.locator('.card-screen');
   await expect(screen).toHaveAttribute('data-card-id', 'bk_l01_c04');
-  await expect(page.locator('.card-place')).toHaveText('Card 4 of 10');
+  await expect(page.locator('.card-row')).toHaveAttribute('aria-label', /^Card 4 of 10:/);
 
   // The question is a screen of its own. Cancel puts the card back as it was left.
   await page.locator('.card-answers .chip').first().click();
-  await page.getByRole('button', { name: 'End session', exact: true }).click();
+  await openEndQuestion(page);
   await expect(page.locator('.end-question .question-text p')).toHaveText([
     'End this session for now?',
     'Your answers are saved, and you can continue it today. The day counts once a session is finished.',
@@ -170,7 +170,7 @@ test('End session asks first, keeps the answers, and Continue carries on at the 
   await expect(screen).toHaveAttribute('data-card-id', 'bk_l01_c04');
   await expect(page.getByRole('button', { name: 'Check', exact: true })).toBeEnabled();
 
-  await page.getByRole('button', { name: 'End session', exact: true }).click();
+  await openEndQuestion(page);
   await page.locator('.end-question').getByRole('button', { name: 'End session', exact: true }).click();
   await expect(page.locator('.home-screen')).toBeVisible();
   await expect(button(page)).toHaveText("Continue today's session");
@@ -189,7 +189,7 @@ test('End session asks first, keeps the answers, and Continue carries on at the 
   // Continue: the same card, the same plan, nothing assembled again.
   await button(page).click();
   await expect(screen).toHaveAttribute('data-card-id', 'bk_l01_c04');
-  await expect(page.locator('.card-place')).toHaveText('Card 4 of 10');
+  await expect(page.locator('.card-row')).toHaveAttribute('aria-label', /^Card 4 of 10:/);
   const rest = await playSession(page, cards);
   expect(rest).toEqual(left.session.plan.slice(3).map((item) => item.cardId));
   await expect(lines(page).nth(0)).toHaveText('10 cards seen.');
@@ -214,7 +214,7 @@ test('closing the app part-way keeps the session: after a restart, Continue carr
   await expect(button(page)).toHaveText("Continue today's session");
   await button(page).click();
   await expect(screen).toHaveAttribute('data-card-id', 'bk_l01_c05');
-  await expect(page.locator('.card-place')).toHaveText('Card 5 of 10');
+  await expect(page.locator('.card-row')).toHaveAttribute('aria-label', /^Card 5 of 10:/);
 
   // Closed after Check and before Continue: the answer was saved at Check, so the next
   // card is the one it reached.
@@ -226,7 +226,7 @@ test('closing the app part-way keeps the session: after a restart, Continue carr
   await expect(button(page)).toHaveText("Continue today's session");
   await button(page).click();
   await expect(screen).toHaveAttribute('data-card-id', 'bk_l01_c06');
-  await expect(page.locator('.card-place')).toHaveText('Card 6 of 10');
+  await expect(page.locator('.card-row')).toHaveAttribute('aria-label', /^Card 6 of 10:/);
 
   await playSession(page, cards);
   await expect(lines(page).nth(1)).toHaveText('8 of 8 answers correct, 100%.');

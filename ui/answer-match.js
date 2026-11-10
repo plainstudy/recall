@@ -91,6 +91,19 @@ export function mountMatch(card, lists, { answers, changed }) {
       if (partner.left.size !== lists.left.length) return null;
       return { pairs: lists.left.map((leftId) => [leftId, partner.left.get(leftId)]) };
     },
+    // An answer given earlier, its pairs shown again as they were made.
+    restore(given) {
+      partner.left.clear();
+      partner.right.clear();
+      marks.clear();
+      active = null;
+      for (const [leftId, rightId] of given.pairs || []) {
+        partner.left.set(String(leftId), String(rightId));
+        partner.right.set(String(rightId), String(leftId));
+        marks.set(String(leftId), lowestFreeMark());
+      }
+      render();
+    },
     reveal(score) {
       locked = true;
       for (const side of ['left', 'right']) for (const button of buttons[side].values()) button.disabled = true;
