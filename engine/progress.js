@@ -5,6 +5,7 @@
 
 import { instantOf, isDay, isStamp, learnerDay, localStamp } from './days.js';
 import { isId, newId } from './ids.js';
+import { checkStreak } from './streak.js';
 import { isVersion } from './versions.js';
 
 export const SCHEMA_VERSION = 3;
@@ -182,7 +183,12 @@ export function checkProgress(p) {
 
 // The progress after a restore: the report's, the learner's id included, all but
 // `installed`, which always describes the content actually on this phone, and `deviceId`,
-// which names this phone's own copy of the app.
+// which names this phone's own copy of the app. The streak is then checked against today,
+// since days may have been missed between the report and the restore.
 export function restoredProgress(phone, fromReport, clock, engineVersion) {
-  return stamped({ ...fromReport, deviceId: phone.deviceId, installed: phone.installed }, clock, engineVersion);
+  return stamped(
+    { ...fromReport, deviceId: phone.deviceId, installed: phone.installed, streak: checkStreak(fromReport.streak, learnerDay(clock)) },
+    clock,
+    engineVersion,
+  );
 }

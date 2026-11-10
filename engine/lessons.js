@@ -65,6 +65,17 @@ function existingLessons(content) {
   return found;
 }
 
+// The position once a lesson is complete: the lesson joins those completed, and the
+// position moves to the next lesson in order that isn't completed, at card 0. With none
+// after it, the current lesson is null, which means the first open lesson in order.
+export function positionAfterCompleting(position, order, lessonId) {
+  const completed = completedSet(position).has(lessonId) ? [...position.lessonsCompleted] : [...(position.lessonsCompleted || []), lessonId];
+  const done = new Set(completed);
+  const at = order.lessons.findIndex((entry) => entry.lesson.lessonId === lessonId);
+  const next = at < 0 ? null : order.lessons.slice(at + 1).find((entry) => !done.has(entry.lesson.lessonId));
+  return { ...position, currentLesson: next ? next.lesson.lessonId : null, currentCardIndex: 0, lessonsCompleted: completed };
+}
+
 // The position after an import or a pack removed. If the current lesson has gone or is
 // now unverified, it moves to the first lesson in order that isn't completed, at card 0.
 // If the card index is past the end of the lesson, the lesson counts as completed and the
@@ -77,11 +88,5 @@ export function positionAfterUpdate(position, content) {
     return { ...position, currentLesson: firstOpenLesson(order, position), currentCardIndex: 0 };
   }
   if (position.currentCardIndex < lesson.cards.length) return position;
-  const completed = completedSet(position).has(lesson.lessonId)
-    ? [...position.lessonsCompleted]
-    : [...(position.lessonsCompleted || []), lesson.lessonId];
-  const done = new Set(completed);
-  const at = order.lessons.findIndex((entry) => entry.lesson.lessonId === lesson.lessonId);
-  const next = at < 0 ? null : order.lessons.slice(at + 1).find((entry) => !done.has(entry.lesson.lessonId));
-  return { ...position, currentLesson: next ? next.lesson.lessonId : null, currentCardIndex: 0, lessonsCompleted: completed };
+  return positionAfterCompleting(position, order, lesson.lessonId);
 }

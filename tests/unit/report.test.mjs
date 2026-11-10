@@ -91,8 +91,9 @@ test('the progress block carries the report marks, and round-trips exactly (test
   assert.deepEqual(withReportMarks(phone.progress, '2026-11-15').reportsSavedOn, ['2026-11-08', '2026-11-15']);
   assert.deepEqual(withReportMarks(withReportMarks(phone.progress, '2026-11-15'), '2026-11-15').reportsSavedOn, ['2026-11-08', '2026-11-15']);
 
-  // Restored on a wiped phone, after the bundle: streak, position and every atom as saved.
-  clock.set('2026-11-16T09:00:00+03:00');
+  // Restored on a wiped phone the same day, after the bundle: streak, position and every
+  // atom as saved.
+  clock.set('2026-11-15T09:00:00+03:00');
   const fresh = newProgress({ name: 'Test', role: 'Test' }, clock, ENGINE, seededRandom(2));
   const bundle = planImport(recognise(fixtureText('bundle-bakery.json')), { content: emptyContent(), progress: fresh, engineVersion: ENGINE });
   const wiped = progressAfter(fresh, bundle.nextContent, clock, ENGINE);

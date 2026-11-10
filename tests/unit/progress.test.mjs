@@ -132,12 +132,26 @@ test("a restore takes the report's progress and its learner id, and keeps this p
   const clock = clockAt('2026-11-15T07:14:00+03:00');
   const report = seasonedProgress(newProgress({ name: 'Sam', role: 'Baker' }, clock, '0.3.0', seededRandom(1)));
   report.installed = { ...emptyInstalled(), bundleId: 'elsewhere', packs: { other: '3.0' } };
-  clock.set('2026-11-20T09:00:00+03:00');
+  clock.set('2026-11-15T09:00:00+03:00');
   const phone = newProgress({ name: 'Test', role: 'Test' }, clock, '0.3.0', seededRandom(2));
   assert.notEqual(phone.deviceId, report.deviceId);
   assert.notEqual(phone.profile.learnerId, report.profile.learnerId);
   phone.installed = { ...emptyInstalled(), bundleId: 'bakery', packs: { bakery_basics: '1.0' } };
   const restored = restoredProgress(phone, report, clock, '0.3.0');
-  assert.deepEqual(restored, { ...report, deviceId: phone.deviceId, installed: phone.installed, savedOn: '2026-11-20T09:00:00+03:00' });
+  assert.deepEqual(restored, { ...report, deviceId: phone.deviceId, installed: phone.installed, savedOn: '2026-11-15T09:00:00+03:00' });
   assert.equal(restored.profile.learnerId, report.profile.learnerId);
+
+  // Restored some days later, the streak is checked against that day: the report's last
+  // counted day was the 14th, so the 15th uses the one freeze left and the 16th resets it.
+  clock.set('2026-11-17T09:00:00+03:00');
+  const later = restoredProgress(phone, report, clock, '0.3.0');
+  assert.deepEqual(later.streak, {
+    ...report.streak,
+    current: 0,
+    freezesRemaining: 0,
+    freezesUsedOn: ['2026-11-03', '2026-11-15'],
+    countedRun: 0,
+    checkedThrough: '2026-11-16',
+  });
+  assert.deepEqual({ ...later, streak: null, savedOn: null }, { ...restored, streak: null, savedOn: null }, 'nothing else differs');
 });
