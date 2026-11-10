@@ -130,11 +130,12 @@ test("one promotion a day, across a redo too: the day's first answer counts answ
   assert.equal(second.atom.box, 2);
 });
 
-test('an atom moving into box 4 is due 21 days out, give or take a day (test 6); the jitter is only in boxes 3 to 5', () => {
+test('acceptance test 6: a due atom answered correctly, first that day, in a daily session, moves from box 3 to box 4, due 21 days out ±1, and from box 4 to box 5, due 60 days out ±1; the jitter is only in boxes 3 to 5', () => {
   const seen = { 2: new Set(), 3: new Set(), 4: new Set(), 5: new Set() };
   for (let seed = 1; seed <= 60; seed++) {
     for (const from of [1, 2, 3, 4]) {
-      const { atom } = apply(atomIn(from), {}, seed);
+      const { atom, movedUp } = apply(atomIn(from), {}, seed);
+      assert.deepEqual([atom.box, movedUp], [from + 1, true], `from box ${from}`);
       seen[atom.box].add(daysBetween(DAY, atom.dueOn));
     }
   }
