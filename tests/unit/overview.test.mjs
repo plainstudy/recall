@@ -41,7 +41,11 @@ test('a new learner with a bundle: the first lesson is current, nothing is due, 
 
 test('with nothing installed, or nothing left to study, there is no session to offer', () => {
   const empty = overview(phoneWith([], clock()));
-  assert.deepEqual([empty.lessons, empty.place, empty.dueCount, empty.notice, empty.action, empty.label], [[], null, 0, null, null, null]);
+  // From v1.5 the notice line says why there is no button.
+  assert.deepEqual(
+    [empty.lessons, empty.place, empty.dueCount, empty.notice, empty.action, empty.label],
+    [[], null, 0, 'Nothing installed yet. Import a bundle in Settings.', null, null],
+  );
   // A glossary alone gives no lessons either.
   assert.equal(overview(phoneWith('glossary.json', clock())).action, null);
 });
@@ -154,7 +158,7 @@ test('the summary’s lines for a daily session and for a redo', () => {
   assert.deepEqual(lines(first, DAY), [
     '10 cards seen.',
     '7 of 8 answers correct, 88%.',
-    'No atoms moved up a box.',
+    'No reviews moved up a box.',
     'No traps.',
     'Streak 1, longest 1, freezes left 2.',
     'The next review is due tomorrow.',
@@ -167,12 +171,12 @@ test('the summary’s lines for a daily session and for a redo', () => {
   const text = lines(second, '2026-11-16');
   assert.match(text[0], /^\d+ cards seen\.$/);
   assert.match(text[1], /^\d+ of \d+ answers correct, \d+%\.$/);
-  assert.match(text[2], /^[5-8] atoms moved up a box\.$/);
+  assert.match(text[2], /^[5-8] reviews moved up a box\.$/);
   assert.match(text[3], /^1 of [2-4] traps cleared\.$/);
   assert.equal(text[4], 'Streak 2, longest 2, freezes left 2.');
   assert.equal(text[5], 'The next review is due tomorrow.');
 
-  // A redo's summary leaves out the atoms moved up and the streak.
+  // A redo's summary leaves out the reviews moved up and the streak.
   const redoSummary = { kind: 'redo', cards: 6, answered: 5, correct: 5, traps: [2, 2], movedUp: [], streak: null, countedDay: false, firstCompleted: false };
   const redoLines = summaryLines({ summary: redoSummary, progress: second.progress, catalogue: phone.catalogue, day: '2026-11-16' });
   assert.deepEqual(redoLines.slice(0, 3), ['6 cards seen.', '5 of 5 answers correct, 100%.', '2 of 2 traps cleared.']);
@@ -190,4 +194,35 @@ test('the summary’s lines for a daily session and for a redo', () => {
   assert.equal(summaryLines({ summary: one, progress: later.progress, catalogue: phone.catalogue, day: DAY }).at(-1), '1 review is still due today.');
   later.progress.atoms['atom.ingredient.salt'] = atomIn(1, '2026-11-14');
   assert.equal(summaryLines({ summary: one, progress: later.progress, catalogue: phone.catalogue, day: DAY }).at(-1), '2 reviews are still due today.');
+  assert.equal(summaryLines({ summary: { ...first.summary, movedUp: ['a'] }, progress: first.progress, catalogue: phone.catalogue, day: DAY })[2], '1 review moved up a box.');
+});
+
+test('the words learners read speak of reviews, never of atoms', () => {
+  assert.deepEqual([0, 1, 3].map((n) => OVERVIEW_TEXT.dueToday(n)), ['0 reviews due today', '1 review due today', '3 reviews due today']);
+  const c = clock();
+  const phone = withAtoms(at(phoneWith('bundle-bakery-next.json', c), { currentLesson: 'bk_l02', lessonsCompleted: ['bk_l01'] }), ['bk_l01'], 1, '2026-11-14');
+  const o = overview(phone);
+  assert.equal(o.dueText, `${o.dueCount} reviews due today`);
+  assert.ok(o.dueCount > 1);
+  const random = seededRandom(5);
+  const played = playToEnd(daily(phone, c, random), ctxOf(phone, c, random));
+  const words = [...Object.values(OVERVIEW_TEXT).filter((t) => typeof t === 'string'), OVERVIEW_TEXT.dueToday(2), OVERVIEW_TEXT.catchingUp(34), OVERVIEW_TEXT.updateReady('1.0.1')];
+  words.push(...summaryLines({ summary: played.summary, progress: played.progress, catalogue: phone.catalogue, day: DAY }));
+  for (const text of words) assert.doesNotMatch(text, /\batoms?\b|srsKey/i, text);
+});
+
+test('with nothing to study there is no button, and the notice line says why', () => {
+  const c = clock();
+  // Nothing installed at all.
+  const empty = phoneWith([], c);
+  let o = overview(empty);
+  assert.deepEqual([o.action, o.label, o.noticeKind, o.notice], [null, null, 'nothing-installed', 'Nothing installed yet. Import a bundle in Settings.']);
+  // A glossary, but no lessons.
+  o = overview(phoneWith('glossary.json', c));
+  assert.deepEqual([o.action, o.noticeKind, o.notice], [null, 'no-lessons', 'No lessons installed yet. Import a bundle in Settings.']);
+  // A track whose first pack isn't installed: the next-pack line says why.
+  o = overview(phoneWith(['glossary-next.json', 'pack-pastry.json', 'track-bakery-next.json'], c));
+  assert.deepEqual([o.action, o.noticeKind], [null, 'next-pack']);
+  // And the update notice's words.
+  assert.equal(OVERVIEW_TEXT.updateReady('1.0.1'), 'Version 1.0.1 is ready. Restart to use it.');
 });

@@ -50,7 +50,7 @@ test('the next day the reviews come up, mixed into the lesson, and the streak re
   await expect(lines(page)).toHaveText([
     '14 cards seen.',
     '13 of 13 answers correct, 100%.',
-    '8 atoms moved up a box.',
+    '8 reviews moved up a box.',
     '2 of 2 traps cleared.',
     'Streak 2, longest 2, freezes left 2.',
     'The next review is due tomorrow.',

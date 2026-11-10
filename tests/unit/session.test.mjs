@@ -7,7 +7,7 @@ import { isId } from '../../engine/ids.js';
 import { lessonStates } from '../../engine/overview.js';
 import { checkProgress } from '../../engine/progress.js';
 import { isTestable, scoreAnswer } from '../../engine/scoring.js';
-import { MAX_RE_ASKS, applyAnswer, canContinue, completeSession, nextStep, reAskPlace, startSession } from '../../engine/session.js';
+import { MAX_RE_ASKS, applyAnswer, canContinue, completeSession, nextStep, noteTimeOnScreen, reAskPlace, startSession } from '../../engine/session.js';
 import { clockAt } from './clock.mjs';
 import { contentOf, packOf } from './generated.mjs';
 import { at, phoneWith } from './phone.mjs';
@@ -340,6 +340,35 @@ test('a session left part-way keeps its answers, continues the same day from the
   assert.equal(canContinue(record, learnerDay(clock)), false);
   assert.equal(canContinue(null, DAY), false);
   assert.equal(canContinue({ ...record, kind: 'redo' }, DAY), false, 'a redo is never stored or continued');
+});
+
+test('the time on screen is saved again when a session is left at End session or by Back (§5.1)', () => {
+  const { clock, phone, random } = setUp();
+  const ctx = ctxOf(phone, clock, random);
+  let state = startDaily(phone, clock, random);
+
+  // Left before its first card is passed: nothing to keep.
+  assert.deepEqual(noteTimeOnScreen(state, { elapsedSec: 9 }, ctx).changed, false);
+
+  for (let i = 0; i < 4; i++) state = playCard(state, ctx, { seconds: (i + 1) * 15 });
+  assert.equal(state.progress.sessionLog[0].durationSec, 60);
+  assert.equal(state.session.elapsedSec, 60);
+
+  // Twenty more seconds on screen before End session: the log entry and the record take them.
+  clock.set('2026-11-15T07:20:00+03:00');
+  const left = noteTimeOnScreen(state, { elapsedSec: 80.4 }, ctx);
+  assert.equal(left.changed, true);
+  assert.equal(left.progress.sessionLog[0].durationSec, 80);
+  assert.equal(left.session.elapsedSec, 80);
+  assert.equal(left.progress.savedOn, '2026-11-15T07:20:00+03:00');
+  assert.deepEqual({ ...left.progress, sessionLog: [], savedOn: null }, { ...state.progress, sessionLog: [], savedOn: null }, 'nothing else changes');
+  assert.deepEqual({ ...left.session, elapsedSec: 0 }, { ...state.session, elapsedSec: 0 });
+  assert.equal(noteTimeOnScreen(left, { elapsedSec: 80 }, ctx).changed, false, 'the same time again changes nothing');
+
+  // Only teach cards passed, with no answer yet: the record still takes the time.
+  const teachOnly = { progress: state.progress, session: { ...state.session, id: 'another', index: 1, elapsedSec: 5 } };
+  const kept = noteTimeOnScreen(teachOnly, { elapsedSec: 12 }, ctx);
+  assert.deepEqual([kept.changed, kept.session.elapsedSec, kept.progress], [true, 12, state.progress]);
 });
 
 test('a second session the same day carries on with the lesson, and the day counts once (test 39)', () => {

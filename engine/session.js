@@ -254,6 +254,28 @@ export function applyTeach({ progress, session }, { elapsedSec }, { catalogue, c
   };
 }
 
+// The time on screen saved again as a session is left without its summary: at End session
+// or by the phone's Back (spec §5.1). The session's log entry, made at its first answer,
+// takes the time, and so does the session record. A session left before its first card is
+// passed has nothing to keep. Returns { progress, session, changed }: `changed` says
+// whether there is anything new to store.
+export function noteTimeOnScreen({ progress, session }, { elapsedSec }, { clock, engineVersion }) {
+  const duration = Math.round(elapsedSec);
+  if (session.index === 0) return { progress, session, changed: false };
+  const log = Array.isArray(progress.sessionLog) ? progress.sessionLog : [];
+  const at = log.findIndex((entry) => entry && entry.id === session.id);
+  const logChanged = at >= 0 && log[at].durationSec !== duration;
+  const sessionChanged = session.elapsedSec !== duration;
+  if (!logChanged && !sessionChanged) return { progress, session, changed: false };
+  return {
+    progress: logChanged
+      ? stamped({ ...progress, sessionLog: log.map((entry, i) => (i === at ? { ...entry, durationSec: duration } : entry)) }, clock, engineVersion)
+      : progress,
+    session: { ...session, elapsedSec: duration },
+    changed: true,
+  };
+}
+
 // The summary reached: after the last card, or when the time ran out. The session's log
 // entry turns completed, and a daily session counts the day, once, after the streak check.
 // A redo never counts. Returns { progress, summary }, the summary holding what the summary

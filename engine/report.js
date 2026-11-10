@@ -187,7 +187,7 @@ export function buildReport(progress, content, clock, engineVersion, appName) {
   const text = [
     `# ${line(title)} — weekly report`,
     '',
-    `Learner: ${line(progress.profile.name)} · Role: ${line(progress.profile.role)} · Track: ${track}`,
+    `Learner: ${line(progress.profile.name)} · Role: ${progress.profile.role ? line(progress.profile.role) : 'not set'} · Track: ${track}`,
     `Period: ${period.from} to ${period.to} · Saved ${stampText(marked.savedOn)} · Engine ${engineVersion} · Glossary ${installed.glossaryVersion || 'none'}`,
     '',
     ...sessionsSection(progress, period),

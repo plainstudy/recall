@@ -92,7 +92,6 @@ export function startScreen({ progress, content, overview, version, notice, onSe
     textBlock('h1', 'app-title', (content.bundle && content.bundle.title) || APP_NAME),
     textBlock('p', 'lead learner', `${progress.profile.name} · ${progress.profile.role}`),
     notice ? el('p', { class: 'notice', role: 'status', text: notice }) : null,
-    empty ? el('p', { class: 'nothing-installed', text: 'Nothing installed yet.' }) : null,
     hasLessons
       ? el(
           'div',

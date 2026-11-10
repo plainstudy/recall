@@ -1,0 +1,9 @@
+{
+  "trackId": "pastry",
+  "trackVersion": "1.0",
+  "engineMin": "0.2.0",
+  "title": "Pastry cook",
+  "packs": [
+    "pastry_basics"
+  ]
+}

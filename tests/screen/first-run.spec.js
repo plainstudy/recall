@@ -59,6 +59,7 @@ test('name and role are both required, trimmed, and at most 40 characters', asyn
   await expect(page.locator('.first-run-import')).toBeVisible();
   // Import your bundle goes straight to the picker.
   await install(page, 'bundle-bakery.json', { button: 'Import your bundle' });
-  await expect(page.locator('.learner')).toHaveText('Sam · Head baker');
-  expect((await readStored(page)).progress.profile).toMatchObject({ name: 'Sam', role: 'Head baker' });
+  // The bundle's track gives the role, in place of the one typed.
+  await expect(page.locator('.learner')).toHaveText('Sam · Baker');
+  expect((await readStored(page)).progress.profile).toMatchObject({ name: 'Sam', role: 'Baker' });
 });

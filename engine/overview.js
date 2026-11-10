@@ -1,7 +1,8 @@
-// What the start screen and the summary say, worked out from the progress and the content:
-// the lessons and whether each is completed, current or locked; how many atoms are due;
-// the one notice line; which session the large button offers; when the next review is
-// due; and whether a weekly report is due.
+// What Home and the summary say, worked out from the progress and the content: the lessons
+// and whether each is completed, current or locked; how many reviews are due; the one
+// notice line, which says why when there is nothing to study; which session the large
+// button offers; when the next review is due; and whether a weekly report is due. Learners
+// read of cards, reviews, lessons, packs and terms, never of atoms.
 
 import { addDays, daysBetween, longDate } from './days.js';
 import { currentLessonId } from './lessons.js';
@@ -10,18 +11,27 @@ import { canContinue } from './session.js';
 
 export const REPORT_EVERY_DAYS = 7;
 
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
 export const OVERVIEW_TEXT = {
   start: "Start today's session",
   continue: "Continue today's session",
   another: 'Start another session',
+  dueToday: (count) => `${plural(count, 'review', 'reviews')} due today`,
   catchingUp: (count) => `Catching up first — ${count} to clear.`,
   nextPackMissing: "The next pack in your track isn't installed yet.",
   trackDone: 'Every lesson in your track is done.',
   allDone: 'Every installed lesson is done.',
+  nothingInstalled: 'Nothing installed yet. Import a bundle in Settings.',
+  noLessons: 'No lessons installed yet. Import a bundle in Settings.',
+  nothingToStudy: 'There is nothing to study right now.',
+  updateReady: (version) => `Version ${version} is ready. Restart to use it.`,
   reportDue: 'Your weekly report is due.',
 };
 
-const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+// True when nothing at all is installed on the phone.
+const nothingInstalled = (installed) =>
+  !installed || (!installed.bundleId && !installed.trackId && !installed.glossaryVersion && Object.keys(installed.packs || {}).length === 0);
 
 // The lessons in study order, each completed, current or locked (spec §5.7). Only the
 // current lesson and those before it are open: a completed lesson can be redone, the
@@ -40,13 +50,14 @@ export function lessonStates(catalogue, position) {
   }));
 }
 
-// The start screen's facts for this progress and content on this day. `record` is the
-// stored session, if any.
+// Home's facts for this progress and content on this day. `record` is the stored session,
+// if any.
 //   lessons   lessonStates
 //   place     { number, total, title } for the current lesson, or null
-//   dueCount  the atoms due today
-//   notice    the one notice line, or null, and noticeKind, which of the three it is:
-//             'catching-up', 'next-pack' or 'all-done'
+//   dueCount  the reviews due today, and dueText, the same in words: "3 reviews due today"
+//   notice    the one notice line, or null, and noticeKind, which it is: 'catching-up',
+//             'next-pack' or 'all-done'; or, with nothing to study, why: 'nothing-installed',
+//             'no-lessons' or 'nothing-to-study'
 //   action   'continue', 'start', 'another', or null when there is nothing to study
 //   label     the large button's words
 export function overviewOf({ progress, catalogue, day, record }) {
@@ -71,10 +82,18 @@ export function overviewOf({ progress, catalogue, day, record }) {
     action = streak.lastCountedDay === day ? 'another' : 'start';
   }
 
+  // With nothing to study there is no button, and the notice line says why.
+  if (action === null && notice === null) {
+    if (nothingInstalled(progress.installed)) [noticeKind, notice] = ['nothing-installed', OVERVIEW_TEXT.nothingInstalled];
+    else if (lessons.length === 0) [noticeKind, notice] = ['no-lessons', OVERVIEW_TEXT.noLessons];
+    else [noticeKind, notice] = ['nothing-to-study', OVERVIEW_TEXT.nothingToStudy];
+  }
+
   return {
     lessons,
     place: current ? { number: current.number, total: lessons.length, title: current.title } : null,
     dueCount: due.length,
+    dueText: OVERVIEW_TEXT.dueToday(due.length),
     catchingUp,
     notice,
     noticeKind,
@@ -103,7 +122,8 @@ export function reportDue(progress, day) {
 }
 
 // The summary screen's lines, in order, for a summary from session.completeSession and
-// the progress after it. A redo's summary leaves out the atoms moved up and the streak.
+// the progress after it. A redo's summary leaves out the reviews moved up and the streak.
+// Only a due atom answered right moves up a box, so "review" is the exact word for it.
 export function summaryLines({ summary, progress, catalogue, day }) {
   const lines = [`${plural(summary.cards, 'card', 'cards')} seen.`];
   lines.push(
@@ -113,7 +133,7 @@ export function summaryLines({ summary, progress, catalogue, day }) {
   );
   if (summary.kind === 'daily') {
     const moved = summary.movedUp.length;
-    lines.push(moved === 0 ? 'No atoms moved up a box.' : `${plural(moved, 'atom', 'atoms')} moved up a box.`);
+    lines.push(moved === 0 ? 'No reviews moved up a box.' : `${plural(moved, 'review', 'reviews')} moved up a box.`);
   }
   const [cleared, shown] = summary.traps;
   lines.push(shown === 0 ? 'No traps.' : `${cleared} of ${plural(shown, 'trap', 'traps')} cleared.`);

@@ -43,7 +43,7 @@ test('a daily session from Start to the summary, then Start another session', as
   await expect(lines(page)).toHaveText([
     '10 cards seen.',
     '8 of 8 answers correct, 100%.',
-    'No atoms moved up a box.',
+    'No reviews moved up a box.',
     'No traps.',
     'Streak 1, longest 1, freezes left 2.',
     'The next review is due tomorrow.',
@@ -71,7 +71,7 @@ test('a daily session from Start to the summary, then Start another session', as
   await expect(lines(page)).toHaveText([
     '6 cards seen.',
     '5 of 5 answers correct, 100%.',
-    'No atoms moved up a box.',
+    'No reviews moved up a box.',
     '2 of 2 traps cleared.',
     'Streak 1, longest 1, freezes left 2.',
     'The next review is due tomorrow.',

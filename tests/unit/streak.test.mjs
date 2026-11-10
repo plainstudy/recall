@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { learnerDay } from '../../engine/days.js';
-import { checkStreak, countDay } from '../../engine/streak.js';
+import { addDays } from '../../engine/days.js';
+import { FREEZE_DAYS_KEPT, checkStreak, countDay } from '../../engine/streak.js';
 import { clockAt } from './clock.mjs';
 
 const fresh = () => ({
@@ -23,6 +24,20 @@ test('a new learner starts with two freezes, and the first completed session cou
   assert.deepEqual(s, { ...fresh(), current: 1, longest: 1, lastCountedDay: '2026-11-10', countedRun: 1 });
   const before = fresh();
   assert.equal(checkStreak(before, '2026-12-25'), before, 'before the first counted day there is nothing to check');
+});
+
+test('the days covered by freezes keep the latest 30, the oldest dropped first', () => {
+  assert.equal(FREEZE_DAYS_KEPT, 30);
+  const start = '2026-01-01';
+  const used = Array.from({ length: 29 }, (_, i) => addDays(start, i * 3));
+  const last = used[used.length - 1];
+  // Two freezes left, and the last day counted three days ago: two missed days to cover.
+  const streak = { ...fresh(), current: 4, longest: 4, lastCountedDay: addDays(last, 1), checkedThrough: addDays(last, 1), freezesUsedOn: used };
+  const checked = checkStreak(streak, addDays(last, 4));
+  assert.equal(checked.freezesRemaining, 0);
+  assert.equal(checked.freezesUsedOn.length, 30);
+  assert.deepEqual(checked.freezesUsedOn, [...used.slice(1), addDays(last, 2), addDays(last, 3)]);
+  assert.equal(checked.current, 4, 'days covered by freezes leave the streak as it was');
 });
 
 test('a day counts once: a second session the same day adds nothing', () => {

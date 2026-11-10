@@ -13,7 +13,7 @@ const ENGINE = '0.3.0';
 
 // A phone with the bakery bundle and a learner part-way through.
 function bakeryPhone(clock) {
-  const progress = newProgress({ name: 'Sam Baker', role: 'Head baker' }, clock, ENGINE, seededRandom(1));
+  const progress = newProgress({ name: 'Sam Baker' }, clock, ENGINE, seededRandom(1));
   progress.profile.createdOn = '2026-11-01';
   const plan = planImport(recognise(fixtureText('bundle-bakery.json')), { content: emptyContent(), progress, engineVersion: ENGINE });
   const after = progressAfter(progress, plan.nextContent, clock, ENGINE);
@@ -44,7 +44,8 @@ test('the report names the learner, role and track, and has every section (test 
   assert.equal(fileName, 'Bakery_School_Report_Sam-Baker_2026-11-15.md');
   const lines = text.split('\n');
   assert.equal(lines[0], '# Bakery School — weekly report');
-  assert.equal(lines[2], 'Learner: Sam Baker · Role: Head baker · Track: Baker (baker 1.0)');
+  // The role is the one the bundle's track gave.
+  assert.equal(lines[2], 'Learner: Sam Baker · Role: Baker · Track: Baker (baker 1.0)');
   assert.equal(lines[3], 'Period: 2026-11-08 to 2026-11-15 · Saved 2026-11-15 07:20 · Engine 0.3.0 · Glossary 1.1');
   for (const heading of ['## Sessions', '## Accuracy by family', '## Top confusions', '## Failing atoms', '## Requested terms', '## Position', '## Full progress data']) {
     assert.ok(lines.includes(heading), heading);
@@ -68,10 +69,10 @@ test('the report names the learner, role and track, and has every section (test 
 
 test('a learner with nothing yet gets a plain report', () => {
   const clock = clockAt('2026-11-15T07:20:00+03:00');
-  const progress = newProgress({ name: 'Sam', role: 'Baker' }, clock, ENGINE, seededRandom(1));
+  const progress = newProgress({ name: 'Sam' }, clock, ENGINE, seededRandom(1));
   const { fileName, text } = buildReport(progress, emptyContent(), clock, ENGINE, APP_NAME);
   assert.equal(fileName, 'Report_Sam_2026-11-15.md');
-  assert.ok(text.startsWith(`# ${APP_NAME} — weekly report\n\nLearner: Sam · Role: Baker · Track: none\n`));
+  assert.ok(text.startsWith(`# ${APP_NAME} — weekly report\n\nLearner: Sam · Role: not set · Track: none\n`));
   assert.ok(text.includes('· Glossary none'));
   for (const empty of ['No daily sessions in this period.', 'No answers in this period.', 'None recorded.', 'No lessons installed.']) {
     assert.ok(text.includes(empty), empty);

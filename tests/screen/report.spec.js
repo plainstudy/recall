@@ -50,7 +50,7 @@ test('a saved report restores a wiped browser exactly: streak, position, every a
   await firstRun(wiped, { name: 'Test', role: 'Test' });
   await install(wiped, 'bundle-bakery.json');
   await restore(wiped, path);
-  await expect(wiped.locator('.learner')).toHaveText('Sam Baker · Head baker');
+  await expect(wiped.locator('.learner')).toHaveText('Sam Baker · Baker');
   await expect(wiped.locator('.lesson-current .lesson-title')).toHaveText('At the oven');
   const restored = (await readStored(wiped)).progress;
   expect(restored.streak).toEqual(saved.streak);

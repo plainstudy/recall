@@ -9,7 +9,7 @@ import { longDate, stampDay, instantOf } from './days.js';
 import { changesText, glossaryChanges } from './glossary.js';
 import { positionAfterUpdate } from './lessons.js';
 import { upgradeProgress } from './migrate.js';
-import { installedFrom, PROGRESS_MESSAGES, stamped } from './progress.js';
+import { installedFrom, PROGRESS_MESSAGES, roleOf, stamped } from './progress.js';
 import { checkFile, newerInstalled, problemText } from './validate.js';
 import { compareVersions } from './versions.js';
 
@@ -164,10 +164,19 @@ export function planRemove(packId, content) {
 }
 
 // Progress after content changes: `installed` describes the new content, the position
-// follows §5.7's rule, and nothing else moves, atoms included.
+// follows §5.7's rule, and a track new to this phone, a different one or a newer version
+// of the same, gives the learner its role. Nothing else moves, atoms included.
 export function progressAfter(progress, nextContent, clock, engineVersion) {
+  const installed = installedFrom(nextContent);
+  const trackArrived =
+    nextContent.track != null && (installed.trackId !== progress.installed.trackId || installed.trackVersion !== progress.installed.trackVersion);
   return stamped(
-    { ...progress, installed: installedFrom(nextContent), position: positionAfterUpdate(progress.position, nextContent) },
+    {
+      ...progress,
+      profile: trackArrived ? { ...progress.profile, role: roleOf(nextContent.track) } : progress.profile,
+      installed,
+      position: positionAfterUpdate(progress.position, nextContent),
+    },
     clock,
     engineVersion,
   );

@@ -46,7 +46,7 @@ test('a report from an older app restores, taking a new learner id and keeping t
   await expect(page.locator('.change-line').first()).toHaveText("Restore Sam Baker's progress from 15 November 2026? This replaces the progress on this phone.");
   await page.getByRole('button', { name: 'Restore', exact: true }).click();
   await expect(page.locator('.start-screen')).toBeVisible();
-  await expect(page.locator('.learner')).toHaveText('Sam Baker · Head baker');
+  await expect(page.locator('.learner')).toHaveText('Sam Baker · Baker');
   await expect(page.locator('.lesson-current .lesson-title')).toHaveText('At the oven');
 
   const restored = (await readStored(page)).progress;

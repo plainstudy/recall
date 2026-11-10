@@ -12,7 +12,7 @@ async function seededPhone(page, testInfo) {
   await chooseFile(page, 'Import', seed.path);
   await expect(page.locator('.change-line')).toHaveText(["Restore Sam Baker's progress from 15 November 2026? This replaces the progress on this phone."]);
   await page.getByRole('button', { name: 'Restore', exact: true }).click();
-  await expect(page.locator('.learner')).toHaveText('Sam Baker · Head baker');
+  await expect(page.locator('.learner')).toHaveText('Sam Baker · Baker');
   await expect(page.locator('.notice')).toHaveText("Sam Baker's progress is restored.");
   return seed;
 }

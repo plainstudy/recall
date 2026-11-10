@@ -8,6 +8,7 @@ import { addDays, daysBetween } from './days.js';
 
 export const MAX_FREEZES = 2;
 export const COUNTED_DAYS_PER_FREEZE = 7;
+export const FREEZE_DAYS_KEPT = 30; // freezesUsedOn keeps the latest 30, the oldest dropped first
 
 // The missed-day check. Each day after the later of `lastCountedDay` and `checkedThrough`,
 // up to yesterday, was missed: it uses a freeze and goes into `freezesUsedOn`, or, with
@@ -34,7 +35,7 @@ export function checkStreak(streak, today) {
       break;
     }
   }
-  return { ...streak, current, freezesRemaining, freezesUsedOn, countedRun, checkedThrough: yesterday };
+  return { ...streak, current, freezesRemaining, freezesUsedOn: freezesUsedOn.slice(-FREEZE_DAYS_KEPT), countedRun, checkedThrough: yesterday };
 }
 
 // Counting today, after the check. A day counts once: a second session the same day, or a

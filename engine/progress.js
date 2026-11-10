@@ -27,6 +27,21 @@ const isObject = (x) => x !== null && typeof x === 'object' && !Array.isArray(x)
 const isCount = (x) => Number.isInteger(x) && x >= 0;
 const isText = (x) => typeof x === 'string';
 
+// The learner's name, the only thing first run asks, trimmed: { ok, name, problem }.
+export function checkName(name) {
+  const clean = String(name ?? '').trim();
+  if (clean === '') return { ok: false, name: clean, problem: PROGRESS_MESSAGES.nameMissing };
+  if ([...clean].length > PROFILE_MAX) return { ok: false, name: clean, problem: PROGRESS_MESSAGES.tooLong };
+  return { ok: true, name: clean, problem: null };
+}
+
+// The role a track gives whoever studies it: its `role`, or its title where it has none.
+export function roleOf(track) {
+  if (!track) return '';
+  const role = typeof track.role === 'string' ? track.role.trim() : '';
+  return role !== '' ? role : String(track.title ?? '').trim();
+}
+
 // Name and role, trimmed: { ok, profile, problems: { name?, role? } }.
 export function checkProfile({ name, role }) {
   const clean = { name: String(name ?? '').trim(), role: String(role ?? '').trim() };
@@ -71,7 +86,7 @@ export function installedFrom(content) {
 export const stamped = (progress, clock, engineVersion) => ({ ...progress, savedOn: localStamp(clock), engineVersion });
 
 // A new learner's progress, made at first run, with an id for this phone's copy of the app
-// and one for the learner.
+// and one for the learner. The role stays empty until a track is installed.
 export function newProgress(profile, clock, engineVersion, random) {
   return stamped(
     {
@@ -79,7 +94,7 @@ export function newProgress(profile, clock, engineVersion, random) {
       savedOn: null,
       engineVersion,
       deviceId: newId(random),
-      profile: { learnerId: newId(random), name: profile.name, role: profile.role, createdOn: learnerDay(clock) },
+      profile: { learnerId: newId(random), name: profile.name, role: typeof profile.role === 'string' ? profile.role : '', createdOn: learnerDay(clock) },
       installed: emptyInstalled(),
       settings: { sessionSeconds: DEFAULT_SESSION_SECONDS, theme: 'phone' },
       streak: {

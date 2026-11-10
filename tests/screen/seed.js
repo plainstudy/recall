@@ -13,15 +13,15 @@ import { seededRandom } from '../unit/seeded.mjs';
 
 export const SEED_STAMP = '2026-11-15T07:20:00+03:00';
 
-// Options: `bundle` names the bundle fixture installed; `progress` changes the seeded
-// progress before the report is made; `older` writes the report as an app at schema 2
-// did; `change` edits the finished text.
+// Options: `bundle` names the bundle fixture installed, whose track gives the learner's
+// role; `progress` changes the seeded progress before the report is made; `older` writes
+// the report as an app at schema 2 did; `change` edits the finished text.
 export async function seededReport(
   path,
-  { name = 'Sam Baker', role = 'Head baker', stamp = SEED_STAMP, bundle = 'bundle-bakery.json', progress: adjust, older = false, change } = {},
+  { name = 'Sam Baker', stamp = SEED_STAMP, bundle = 'bundle-bakery.json', progress: adjust, older = false, change } = {},
 ) {
   const clock = clockAt(stamp);
-  const progress = newProgress({ name, role }, clock, ENGINE_VERSION, seededRandom(7));
+  const progress = newProgress({ name }, clock, ENGINE_VERSION, seededRandom(7));
   const plan = planImport(recognise(fixtureText(bundle)), { content: emptyContent(), progress, engineVersion: ENGINE_VERSION });
   let seeded = seasonedProgress(progressAfter(progress, plan.nextContent, clock, ENGINE_VERSION));
   if (adjust) seeded = adjust(seeded);
