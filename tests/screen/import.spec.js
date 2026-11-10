@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { MESSAGES, problemText } from '../../engine/validate.js';
 import { ENGINE_VERSION } from '../../version.js';
-import { chooseFile, firstRun, fixturePath, install, readStored, watchErrors } from './helpers.js';
+import { chooseFile, firstRun, fixturePath, gotoPlace, install, readStored, watchErrors } from './helpers.js';
 
 const packWith = async (change) => {
   const pack = JSON.parse(await readFile(fixturePath('pack-bakery.json'), 'utf8'));
@@ -10,12 +10,13 @@ const packWith = async (change) => {
   return { name: 'pack-bakery.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(pack)) };
 };
 
+// A file refused with its plain message; Close goes back to Settings, where Import was.
 async function expectRefusal(page, file, message) {
   await chooseFile(page, 'Import', file);
   await expect(page.getByRole('alert')).toHaveText(message);
   await expect(page.locator('.refusal-after')).toHaveText('Nothing was changed.');
   await page.getByRole('button', { name: 'Close', exact: true }).click();
-  await expect(page.locator('.start-screen')).toBeVisible();
+  await expect(page.locator('.settings-screen')).toBeVisible();
 }
 
 test('a pack is imported after its glossary; a malformed one, or one needing a newer engine, is refused and nothing changes (test 17)', async ({
@@ -24,8 +25,8 @@ test('a pack is imported after its glossary; a malformed one, or one needing a n
   const errors = watchErrors(page);
   await firstRun(page);
   await expectRefusal(page, 'pack-bakery.json', problemText({ item: 'the pack', message: MESSAGES.noGlossary }));
-  await install(page, 'glossary.json');
-  await expect(page.locator('.notice')).toHaveText('Glossary 1.1 installed.');
+  await install(page, 'glossary.json', { stay: true });
+  await expect(page.locator('.notice-done')).toHaveText('Glossary 1.1 installed.');
   const before = await readStored(page);
 
   await expectRefusal(
@@ -40,6 +41,7 @@ test('a pack is imported after its glossary; a malformed one, or one needing a n
   );
   await expectRefusal(page, { name: 'pack.json', mimeType: 'application/json', buffer: Buffer.from('{"packId": "x", "lessons": [') }, "This file isn't something the app can import.");
   expect(await readStored(page)).toEqual(before);
+  await gotoPlace(page, 'Library');
   await expect(page.locator('.lesson')).toHaveCount(0);
 
   await chooseFile(page, 'Import', 'pack-bakery.json');
@@ -49,10 +51,26 @@ test('a pack is imported after its glossary; a malformed one, or one needing a n
     '1 lesson is marked needs-review.',
   ]);
   await page.getByRole('button', { name: 'Install', exact: true }).click();
-  await expect(page.locator('.notice')).toHaveText('Pack Bread basics 1.0 installed.');
+  await expect(page.locator('.notice-done')).toHaveText('Pack Bread basics 1.0 installed.');
+  await gotoPlace(page, 'Library');
   await expect(page.locator('.lesson')).toHaveCount(2);
   expect(Object.keys((await readStored(page)).content).sort()).toEqual(['glossary', 'pack:bakery_basics']);
   await expectRefusal(page, 'pack-bakery.json', MESSAGES.alreadyInstalled('pack', '1.0'));
+  expect(errors).toEqual([]);
+});
+
+test('acceptance test 12: a pack needing a newer engine gets a plain message, not a blank screen, and nothing changes', async ({ page }) => {
+  const errors = watchErrors(page);
+  await firstRun(page);
+  await install(page, 'bundle-bakery-next.json');
+  const before = await readStored(page);
+  await chooseFile(page, 'Import', 'pack-bakery-future.json');
+  await expect(page.locator('.import-refused .file-name')).toHaveText('pack-bakery-future.json');
+  await expect(page.getByRole('alert')).toHaveText(`This pack needs engine 9.0.0 or later. This app is ${ENGINE_VERSION}. Restart the app when it has updated.`);
+  await expect(page.locator('.refusal-after')).toHaveText('Nothing was changed.');
+  await page.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(page.locator('.settings-screen')).toBeVisible();
+  expect(await readStored(page)).toEqual(before);
   expect(errors).toEqual([]);
 });
 
@@ -64,9 +82,11 @@ test('a bundle imported after a newer glossary keeps that glossary and installs 
     "Bundle Bakery School 1.0: glossary 1.2 kept, newer than the bundle's 1.1; pack Bread basics 1.0, new; track Baker 1.0, new.",
   ]);
   await page.getByRole('button', { name: 'Install', exact: true }).click();
-  await expect(page.locator('.app-title')).toHaveText('Bakery School');
-  await expect(page.locator('.lesson')).toHaveCount(2);
   await expect(page.locator('.installed-name')).toHaveText(['Bundle Bakery School 1.0', 'Track Baker 1.0', 'Glossary 1.2', 'Pack Bread basics 1.0']);
+  await gotoPlace(page, 'Home');
+  await expect(page.locator('.app-title')).toHaveText('Bakery School');
+  await gotoPlace(page, 'Library');
+  await expect(page.locator('.lesson')).toHaveCount(2);
   const stored = await readStored(page);
   expect(stored.content.glossary.glossaryVersion).toBe('1.2');
   expect(stored.progress.installed.glossaryVersion).toBe('1.2');
@@ -76,13 +96,13 @@ test('Cancel leaves everything as it was', async ({ page }) => {
   await firstRun(page);
   await chooseFile(page, 'Import', 'bundle-bakery.json');
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await expect(page.getByText('Nothing installed yet.')).toBeVisible();
+  await expect(page.locator('.settings-installed')).toHaveText(/Nothing installed yet\./);
   expect((await readStored(page)).content).toEqual({});
   // The phone's Back cancels too.
   await chooseFile(page, 'Import', 'glossary.json');
   await expect(page.locator('.import-confirm')).toBeVisible();
   await page.goBack();
-  await expect(page.getByText('Nothing installed yet.')).toBeVisible();
+  await expect(page.locator('.settings-installed')).toHaveText(/Nothing installed yet\./);
   expect((await readStored(page)).content).toEqual({});
 });
 

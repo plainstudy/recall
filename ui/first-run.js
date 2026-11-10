@@ -1,67 +1,54 @@
-// First run (spec §7): name, then role, then Import your bundle or Skip. The only typing
-// in the app, apart from search.
-import { PROFILE_MAX, checkProfile } from '../engine/progress.js';
+// First run (spec §7): the app's name, then the learner's name, the only typing in the app
+// apart from search, then Import your bundle or Skip. The role comes from the bundle's
+// track, so it isn't asked.
+import { PROFILE_MAX, checkName } from '../engine/progress.js';
 import { APP_NAME } from './app-name.js';
 import { questionScreen } from './dialogs.js';
 import { el } from './dom.js';
 
-function field(id, label, autocomplete) {
+// The name. onDone({ name }) once it is given.
+export function profileScreen({ version, onDone }) {
   const input = el('input', {
-    id,
+    id: 'profile-name',
     type: 'text',
     maxlength: String(PROFILE_MAX),
-    autocomplete,
+    autocomplete: 'name',
     autocapitalize: 'words',
     spellcheck: 'false',
-    'aria-describedby': `${id}-problem`,
+    'aria-describedby': 'profile-name-problem',
   });
-  const problem = el('p', { id: `${id}-problem`, class: 'field-problem', 'aria-live': 'polite' });
-  const wrap = el('div', { class: 'field' }, el('label', { for: id, text: label }), input, problem);
-  return { wrap, input, problem };
-}
-
-// The name and role. onDone({ name, role }) once both are given.
-export function profileScreen({ version, onDone }) {
-  const name = field('profile-name', 'Your name', 'name');
-  const role = field('profile-role', 'Your role', 'organization-title');
+  const problem = el('p', { id: 'profile-name-problem', class: 'field-problem', 'aria-live': 'polite' });
   const submit = () => {
-    const check = checkProfile({ name: name.input.value, role: role.input.value });
-    for (const [key, f] of [['name', name], ['role', role]]) {
-      const message = check.problems[key] || '';
-      f.problem.textContent = message;
-      if (message) f.input.setAttribute('aria-invalid', 'true');
-      else f.input.removeAttribute('aria-invalid');
-    }
+    const check = checkName(input.value);
+    problem.textContent = check.problem || '';
     if (!check.ok) {
-      (check.problems.name ? name.input : role.input).focus();
+      input.setAttribute('aria-invalid', 'true');
+      input.focus();
       return;
     }
-    onDone(check.profile);
+    input.removeAttribute('aria-invalid');
+    onDone({ name: check.name });
   };
-  name.input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') role.input.focus();
-  });
-  role.input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') submit();
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') submit();
   });
   return el(
     'section',
     { class: 'screen first-run' },
-    el('h1', { text: APP_NAME }),
-    el('p', { class: 'lead', text: 'Your progress is kept on this phone. Start with your name and role.' }),
-    name.wrap,
-    role.wrap,
+    el('h1', { class: 'screen-title', text: APP_NAME }),
+    el('p', { class: 'lead', text: 'Your progress is kept on this phone. Start with your name.' }),
+    el('div', { class: 'field' }, el('label', { for: 'profile-name', text: 'Your name' }), input, problem),
     el('p', { class: 'version', text: `Version ${version}` }),
     el('div', { class: 'action-bar push' }, el('button', { type: 'button', class: 'primary', text: 'Continue', onclick: submit })),
   );
 }
 
-// After the profile: the bundle, now or later.
+// After the name: the bundle, now or later.
 export function bundleQuestionScreen({ onImport, onSkip }) {
   return questionScreen({
     className: 'first-run first-run-import',
     heading: 'Your bundle',
-    lines: ['Import the bundle you were sent: it holds your lessons, the glossary and your track.', 'You can also skip this and import it later.'],
+    lines: ['Import the bundle you were sent: it holds your lessons, the glossary and your track.', 'You can also skip this and import it later, in Settings.'],
     actions: [
       { label: 'Skip', onclick: onSkip },
       { label: 'Import your bundle', primary: true, onclick: onImport },

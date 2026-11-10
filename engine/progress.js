@@ -17,7 +17,6 @@ export const STARTING_FREEZES = 2;
 
 export const PROGRESS_MESSAGES = {
   nameMissing: 'Enter your name.',
-  roleMissing: 'Enter your role.',
   tooLong: `Use ${PROFILE_MAX} characters or fewer.`,
   newerApp: 'This report comes from a newer version of the app. Restart the app when it has updated.',
   mismatch: "This report's progress data isn't in the form the app expects, so it can't be restored.",
@@ -40,17 +39,6 @@ export function roleOf(track) {
   if (!track) return '';
   const role = typeof track.role === 'string' ? track.role.trim() : '';
   return role !== '' ? role : String(track.title ?? '').trim();
-}
-
-// Name and role, trimmed: { ok, profile, problems: { name?, role? } }.
-export function checkProfile({ name, role }) {
-  const clean = { name: String(name ?? '').trim(), role: String(role ?? '').trim() };
-  const problems = {};
-  for (const field of ['name', 'role']) {
-    if (clean[field] === '') problems[field] = PROGRESS_MESSAGES[`${field}Missing`];
-    else if ([...clean[field]].length > PROFILE_MAX) problems[field] = PROGRESS_MESSAGES.tooLong;
-  }
-  return { ok: Object.keys(problems).length === 0, profile: clean, problems };
 }
 
 // What `installed` says before anything is.

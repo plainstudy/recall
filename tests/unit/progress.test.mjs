@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   PROGRESS_MESSAGES,
-  checkProfile,
+  checkName,
   checkProgress,
   emptyInstalled,
   installedFrom,
@@ -60,12 +60,12 @@ test("first run creates the progress object with spec §3.7's starting values", 
   });
 });
 
-test('name and role are required, trimmed, and at most 40 characters', () => {
-  assert.deepEqual(checkProfile({ name: '  Sam  ', role: ' Head baker ' }), { ok: true, profile: { name: 'Sam', role: 'Head baker' }, problems: {} });
-  assert.deepEqual(checkProfile({ name: '   ', role: '' }).problems, { name: PROGRESS_MESSAGES.nameMissing, role: PROGRESS_MESSAGES.roleMissing });
-  assert.equal(checkProfile({ name: 'x'.repeat(40), role: 'r' }).ok, true);
-  assert.deepEqual(checkProfile({ name: 'x'.repeat(41), role: 'r' }).problems, { name: PROGRESS_MESSAGES.tooLong });
-  assert.equal(checkProfile({ name: 'Ю'.repeat(40), role: 'r' }).ok, true, 'characters, not bytes');
+test('the name is required, trimmed, and at most 40 characters', () => {
+  assert.deepEqual(checkName('  Sam  '), { ok: true, name: 'Sam', problem: null });
+  assert.equal(checkName('   ').problem, PROGRESS_MESSAGES.nameMissing);
+  assert.equal(checkName('x'.repeat(40)).ok, true);
+  assert.equal(checkName('x'.repeat(41)).problem, PROGRESS_MESSAGES.tooLong);
+  assert.equal(checkName('Ю'.repeat(40)).ok, true, 'characters, not bytes');
 });
 
 test('of two copies the later-saved one wins, and the first on a tie', () => {

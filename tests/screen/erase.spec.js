@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { CONTROLLER_MESSAGES } from '../../ui/controller.js';
-import { firstRun, install, readStored } from './helpers.js';
+import { firstRun, gotoPlace, install, readStored } from './helpers.js';
 
 test('Erase offers a report first, asks to confirm, and leaves nothing of the learner behind', async ({ page }) => {
   await page.addInitScript(() => {
@@ -13,7 +13,8 @@ test('Erase offers a report first, asks to confirm, and leaves nothing of the le
   const cachesBefore = await page.evaluate(() => caches.keys());
   expect(cachesBefore.length).toBeGreaterThan(0);
 
-  // Saving the offered report, then thinking better of it.
+  // Saving the offered report, then thinking better of it. Erase is in Settings.
+  await gotoPlace(page, 'Settings');
   await page.getByRole('button', { name: 'Erase this phone', exact: true }).click();
   await expect(page.locator('.erase-offer .question-text')).toHaveText(CONTROLLER_MESSAGES.eraseOffer);
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Save report', exact: true }).click()]);
@@ -22,7 +23,7 @@ test('Erase offers a report first, asks to confirm, and leaves nothing of the le
     CONTROLLER_MESSAGES.eraseConfirm,
   ]);
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await expect(page.locator('.app-title')).toHaveText('Bakery School');
+  await expect(page.locator('.settings-screen')).toBeVisible();
 
   // Skipping the report, and erasing.
   await page.getByRole('button', { name: 'Erase this phone', exact: true }).click();
@@ -39,6 +40,6 @@ test('Erase offers a report first, asks to confirm, and leaves nothing of the le
   // And the app starts again from nothing.
   await page.reload();
   await expect(page.getByLabel('Your name')).toBeVisible();
-  await firstRun(page, { name: 'Alex', role: 'Baker' });
-  await expect(page.getByText('Nothing installed yet.')).toBeVisible();
+  await firstRun(page, { name: 'Alex' });
+  await expect(page.locator('.home-notice')).toHaveText('Nothing installed yet. Import a bundle in Settings.');
 });

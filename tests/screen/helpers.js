@@ -35,22 +35,34 @@ export function watchErrors(page) {
   return errors;
 }
 
-// First run: name and role, then Skip (or stop at the bundle question).
-export async function firstRun(page, { name = 'Sam', role = 'Baker', skip = true } = {}) {
+// First run: the name, then Skip (or stop at the bundle question).
+export async function firstRun(page, { name = 'Sam', skip = true } = {}) {
   await page.goto('/');
   await page.getByLabel('Your name').fill(name);
-  await page.getByLabel('Your role').fill(role);
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(page.locator('.first-run-import')).toBeVisible();
   if (skip) {
     await page.getByRole('button', { name: 'Skip', exact: true }).click();
-    await expect(page.locator('.start-screen')).toBeVisible();
+    await expect(page.locator('.home-screen')).toBeVisible();
   }
 }
 
+const PLACE_SCREENS = { Home: '.home-screen', Library: '.library-screen', Glossary: '.glossary-screen', Settings: '.settings-screen' };
+
+// One of the four places, through the navigation bar; nothing to do if it is on screen.
+export async function gotoPlace(page, place) {
+  const screen = page.locator(PLACE_SCREENS[place]);
+  if ((await screen.count()) === 0) {
+    await page.getByRole('navigation', { name: 'Places' }).getByRole('button', { name: place, exact: true }).click();
+  }
+  await expect(screen).toBeVisible();
+}
+
 // Taps a button that opens the file picker, and picks these files: fixture names, paths,
-// or { name, mimeType, buffer }.
+// or { name, mimeType, buffer }. Import is in Settings, so from another place it goes there
+// first.
 export async function chooseFile(page, buttonName, file) {
+  if (buttonName === 'Import' && (await page.locator('.home-screen, .library-screen, .glossary-screen').count()) > 0) await gotoPlace(page, 'Settings');
   const [chooser] = await Promise.all([
     page.waitForEvent('filechooser'),
     page.getByRole('button', { name: buttonName, exact: true }).click(),
@@ -58,12 +70,15 @@ export async function chooseFile(page, buttonName, file) {
   await chooser.setFiles(typeof file === 'string' && !file.includes('/') && !file.includes('\\') ? fixturePath(file) : file);
 }
 
-// Imports a file and installs it, back on the start screen.
-export async function install(page, file, { button = 'Import', confirm = 'Install' } = {}) {
+// Imports a file from Settings, or from first run's own button, and installs it; then,
+// unless `stay`, goes Home.
+export async function install(page, file, { button = 'Import', confirm = 'Install', stay = false } = {}) {
+  if (button === 'Import') await gotoPlace(page, 'Settings');
   await chooseFile(page, button, file);
   await expect(page.locator('.import-confirm')).toBeVisible();
   await page.getByRole('button', { name: confirm, exact: true }).click();
-  await expect(page.locator('.start-screen')).toBeVisible();
+  await expect(page.locator('.settings-screen, .home-screen')).toBeVisible();
+  if (!stay) await gotoPlace(page, 'Home');
 }
 
 // A learner with these files installed, on the start screen.
@@ -148,13 +163,16 @@ export async function pageClock(page) {
 
 let seeds = 0;
 
-// Restores a report seeded for the test, generated as it runs. Returns the seed.
+// Restores a report seeded for the test, generated as it runs, from Settings, then goes
+// Home. Returns the seed.
 export async function restoreSeed(page, testInfo, options = {}) {
   const seed = await seededReport(testInfo.outputPath(`seed-${++seeds}.md`), options);
+  await gotoPlace(page, 'Settings');
   await chooseFile(page, 'Import', seed.path);
   await expect(page.locator('.import-confirm')).toHaveAttribute('data-kind', 'report');
   await page.getByRole('button', { name: 'Restore', exact: true }).click();
-  await expect(page.locator('.start-screen')).toBeVisible();
+  await expect(page.locator('.settings-screen')).toBeVisible();
+  await gotoPlace(page, 'Home');
   return seed;
 }
 
@@ -168,16 +186,41 @@ export async function setUpCompleted(page, testInfo, files = ['glossary.json', '
   return restoreSeed(page, testInfo, { progress: (p) => ({ ...p, position: BOTH_COMPLETED }) });
 }
 
-// Starts the redo of a completed lesson, by its number in the list.
+// Starts the redo of a completed lesson from the Library, by its number in the list.
 export async function redoLesson(page, number) {
+  await gotoPlace(page, 'Library');
   await page.getByRole('button', { name: `Redo lesson ${number}`, exact: true }).click();
   await expect(page.locator('.card-screen')).toBeVisible();
 }
 
-// From a summary, back to the start screen.
+// From a summary, back where the session was started: Home, or the Library for a redo.
 export async function done(page) {
   await page.getByRole('button', { name: 'Done', exact: true }).click();
-  await expect(page.locator('.start-screen')).toBeVisible();
+  await expect(page.locator('.home-screen, .library-screen')).toBeVisible();
+}
+
+// Home's streak scorecards: the streak, the longest and the freezes left.
+export async function expectStreak(page, current, longest, freezes) {
+  await expect(page.locator('.scorecard-streak')).toHaveAttribute('data-value', String(current));
+  await expect(page.locator('.scorecard-longest')).toHaveAttribute('data-value', String(longest));
+  await expect(page.locator('.scorecard-freezes')).toHaveAttribute('data-value', String(freezes));
+}
+
+// On a place: the main action, if there is one, and the navigation bar in the lower third.
+export async function expectFootInLowerThird(page) {
+  const m = await page.evaluate(() => ({
+    vh: window.innerHeight,
+    nav: document.querySelector('.nav-bar').getBoundingClientRect().top,
+    actions: [...document.querySelectorAll('.screen-foot .action-bar button')].map((b) => b.getBoundingClientRect().top),
+  }));
+  for (const top of [m.nav, ...m.actions]) expect(top).toBeGreaterThanOrEqual((m.vh * 2) / 3);
+}
+
+// Home's figures: { streak, longest, freezes, due }, as numbers.
+export async function homeFigures(page) {
+  await expect(page.locator('.home-screen')).toBeVisible();
+  const read = async (kind) => Number(await page.locator(`.scorecard-${kind}`).getAttribute('data-value'));
+  return { streak: await read('streak'), longest: await read('longest'), freezes: await read('freezes'), due: await read('due') };
 }
 
 export const expectedVerdict = (card, right) =>

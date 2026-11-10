@@ -2,7 +2,7 @@
 // and records each presentation, measures the time the app is on screen, hands every
 // answer to the engine and stores what comes back before moving on.
 import { drawPresentation } from '../engine/option-order.js';
-import { applyAnswer, applyTeach, completeSession, nextStep } from '../engine/session.js';
+import { applyAnswer, applyTeach, completeSession, nextStep, noteTimeOnScreen } from '../engine/session.js';
 import { cardScreen } from './card-screen.js';
 
 // show(screen) puts a screen on the page.
@@ -116,13 +116,24 @@ export function sessionRunner({ show, presentations, context, store, onProgress,
       run = { progress, session, pending: null, counted: session.elapsedSec || 0, since: document.visibilityState === 'hidden' ? null : now() };
       showNext();
     },
-    // Leaves the session where it stands, once anything being stored has been. Resolves
-    // with { progress, session } as they were stored, or null when no session was running.
+    // Leaves the session where it stands, once anything being stored has been, and saves
+    // the time on screen again, with the record of a daily session. Resolves with
+    // { progress, session } as they were stored, or null when no session was running.
     async stop() {
       const left = run;
-      run = null;
       if (!left) return null;
+      const seconds = elapsed();
+      run = null;
       if (left.pending) await left.pending;
+      const noted = noteTimeOnScreen(left, { elapsedSec: seconds }, context());
+      if (noted.changed) {
+        try {
+          await store.writeAnswer(noted.progress, noted.session.kind === 'daily' ? noted.session : null);
+          return { progress: noted.progress, session: noted.session };
+        } catch {
+          // The answers are already stored; only the last seconds on screen are lost.
+        }
+      }
       return { progress: left.progress, session: left.session };
     },
     running: () => run !== null,

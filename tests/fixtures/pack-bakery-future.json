@@ -1,0 +1,43 @@
+{
+  "packId": "bakery_future",
+  "packVersion": "1.0",
+  "engineMin": "9.0.0",
+  "contentClass": "public",
+  "order": 3,
+  "title": "Bakery of the future",
+  "subtitle": "Invented test content, for an engine far ahead of this one",
+  "authoredOn": "2026-11-10",
+  "figures": {},
+  "lessons": [
+    {
+      "lessonId": "bf_l01",
+      "order": 1,
+      "title": "A loaf from tomorrow",
+      "objective": "Show that a pack needing a newer engine is refused with a plain message.",
+      "estMinutes": 2,
+      "prerequisites": [],
+      "verification": { "status": "verified", "sources": ["Invented for tests."], "checkedOn": "2026-11-10", "note": "Invented content." },
+      "cards": [
+        {
+          "cardId": "bf_l01_c01",
+          "type": "teach",
+          "prompt": "A loaf rises while it proves, before it goes into the oven."
+        },
+        {
+          "cardId": "bf_l01_c02",
+          "type": "mcq",
+          "srsKey": "atom.future.proving",
+          "prompt": "When does a loaf rise before baking?",
+          "options": [
+            { "id": "a", "text": "While it proves", "correct": true },
+            { "id": "b", "text": "While it cools", "correct": false },
+            { "id": "c", "text": "While it is sliced", "correct": false }
+          ],
+          "feedback": "The rise comes while the dough proves.",
+          "difficulty": 1,
+          "glossaryRefs": []
+        }
+      ]
+    }
+  ]
+}

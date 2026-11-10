@@ -1,16 +1,17 @@
 import { expect, test } from '@playwright/test';
 import { FORMAT_MESSAGES } from '../../engine/formats.js';
 import { MESSAGES } from '../../engine/validate.js';
-import { chooseFile, firstRun, install, pinClock, readFixturePack, readStored, redoLesson, restoreSeed, setUp, setUpCompleted, watchErrors } from './helpers.js';
+import { chooseFile, firstRun, gotoPlace, install, pinClock, readFixturePack, readStored, redoLesson, restoreSeed, setUp, setUpCompleted, watchErrors } from './helpers.js';
 
 const asFile = (name, data) => ({ name, mimeType: 'application/json', buffer: Buffer.from(typeof data === 'string' ? data : JSON.stringify(data)) });
 
+// A refusal, then Close, back on Settings where Import was started.
 async function expectRefused(page, message, more = 0) {
   await expect(page.locator('.import-refused')).toBeVisible();
   await expect(page.getByRole('alert')).toHaveText(message);
   await expect(page.locator('.refusal-more')).toHaveCount(more > 0 ? 1 : 0);
   await page.getByRole('button', { name: 'Close', exact: true }).click();
-  await expect(page.locator('.start-screen')).toBeVisible();
+  await expect(page.locator('.settings-screen')).toBeVisible();
 }
 
 test('a pack in the older shape is refused with the older-format message, and nothing changes', async ({ page }) => {
@@ -20,7 +21,7 @@ test('a pack in the older shape is refused with the older-format message, and no
   await chooseFile(page, 'Import', 'pack-bakery-old.json');
   await expect(page.locator('.file-name')).toHaveText('pack-bakery-old.json');
   await expectRefused(page, MESSAGES.olderPack);
-  await expect(page.getByText('Nothing installed yet.')).toHaveCount(0);
+  await gotoPlace(page, 'Library');
   await expect(page.locator('.lesson')).toHaveCount(0);
   expect(await readStored(page)).toEqual(before);
   expect(errors).toEqual([]);
@@ -29,18 +30,20 @@ test('a pack in the older shape is refused with the older-format message, and no
 test('the lesson list leaves out unverified lessons and marks those that need review, once they are open', async ({ page }, testInfo) => {
   await pinClock(page);
   await setUp(page);
+  await gotoPlace(page, 'Library');
   const lessons = page.locator('.lesson');
   await expect(lessons).toHaveCount(2);
   await expect(page.getByText('An unverified draft')).toHaveCount(0);
-  await expect(lessons.nth(0).locator('.lesson-marker', { hasText: 'Needs review' })).toHaveCount(0);
+  await expect(lessons.nth(0).locator('.marker', { hasText: 'Needs review' })).toHaveCount(0);
   // For a new learner the second lesson is locked: its title and nothing else.
   await expect(lessons.nth(1)).toHaveAttribute('data-state', 'locked');
-  await expect(lessons.nth(1).locator('.lesson-marker')).toHaveCount(0);
+  await expect(lessons.nth(1).locator('.marker')).toHaveCount(0);
   // A learner who has reached it sees the marker.
   await restoreSeed(page, testInfo);
+  await gotoPlace(page, 'Library');
   await expect(lessons.nth(1)).toHaveAttribute('data-state', 'current');
-  await expect(lessons.nth(1).locator('.lesson-marker', { hasText: 'Needs review' })).toHaveCount(1);
-  await expect(lessons.nth(0).locator('.lesson-marker', { hasText: 'Needs review' })).toHaveCount(0);
+  await expect(lessons.nth(1).locator('.marker', { hasText: 'Needs review' })).toHaveCount(1);
+  await expect(lessons.nth(0).locator('.marker', { hasText: 'Needs review' })).toHaveCount(0);
 });
 
 test('a file the app can’t import gets a plain message, never a blank screen', async ({ page }) => {
@@ -55,7 +58,7 @@ test('a file the app can’t import gets a plain message, never a blank screen',
   await expectRefused(page, FORMAT_MESSAGES.tooLarge);
   await chooseFile(page, 'Import', { name: 'report.md', mimeType: 'text/markdown', buffer: Buffer.from('# Bakery School — weekly report\n\nNo block.\n') });
   await expectRefused(page, FORMAT_MESSAGES.reportWithoutBlock);
-  await expect(page.getByText('Nothing installed yet.')).toBeVisible();
+  await expect(page.locator('.settings-installed')).toHaveText(/Nothing installed yet\./);
 });
 
 test('cards the engine can’t show are refused at import, with every problem counted', async ({ page }) => {
@@ -94,7 +97,7 @@ test('cards the engine can’t show are refused at import, with every problem co
   await expect(page.getByRole('alert')).toHaveText(`Card x1_c1: ${MESSAGES.unknownType('flashcard')}`);
   await expect(page.locator('.refusal-more')).toHaveText('There is 1 more problem.');
   await expectRefused(page, `Card x1_c1: ${MESSAGES.unknownType('flashcard')}`, 1);
-  await expect(page.getByText('Nothing installed yet.')).toBeVisible();
+  await expect(page.locator('.settings-installed')).toHaveText(/Nothing installed yet\./);
 });
 
 test('figures: stepped frames show one step at a time, and a missing figure is left out', async ({ page }, testInfo) => {
@@ -120,22 +123,25 @@ test('figures: stepped frames show one step at a time, and a missing figure is l
   await expect(screen.locator('.figure img')).toHaveCount(3);
   await expect(action).toHaveText('Continue');
 
+  // Back leaves the redo, to the Library it was started from.
   await page.goBack();
-  await expect(page.locator('.start-screen')).toBeVisible();
+  await expect(page.locator('.library-screen')).toBeVisible();
   await redoLesson(page, 2);
   await expect(screen).toHaveAttribute('data-card-id', pack.lessons[1].cards[0].cardId);
   await expect(screen.locator('.prompt')).toBeVisible();
   await expect(screen.locator('.figure')).toHaveCount(0);
 });
 
-test('Back from a lesson returns to the start screen', async ({ page }, testInfo) => {
+test('Back from a lesson returns to the Library, and Back from a place returns Home', async ({ page }, testInfo) => {
   await setUpCompleted(page, testInfo);
   await redoLesson(page, 2);
   await expect(page.locator('.card-screen')).toBeVisible();
   await page.goBack();
-  await expect(page.locator('.start-screen')).toBeVisible();
+  await expect(page.locator('.library-screen')).toBeVisible();
   await expect(page.locator('.lesson')).toHaveCount(2);
-  // Import and Install also come back to the start screen, which says what was done.
-  await install(page, 'track-bakery.json');
-  await expect(page.locator('.notice')).toHaveText('Track Baker 1.0 installed.');
+  await page.goBack();
+  await expect(page.locator('.home-screen')).toBeVisible();
+  // Import and Install come back to Settings, which says what was done.
+  await install(page, 'track-bakery.json', { stay: true });
+  await expect(page.locator('.notice-done')).toHaveText('Track Baker 1.0 installed.');
 });

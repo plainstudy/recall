@@ -1,42 +1,56 @@
 import { expect, test } from '@playwright/test';
-import { cardsOf, chooseFile, done, expectControlsSized, firstRun, install, pinClock, playSession, redoLesson } from './helpers.js';
+import { cardsOf, chooseFile, done, expectControlsSized, expectFootInLowerThird, firstRun, gotoPlace, install, pinClock, playSession, redoLesson } from './helpers.js';
 
-test('every control on the Phase 3 screens is at least 48 px, with 8 px between controls', async ({ page }) => {
-  test.setTimeout(90_000); // a whole session is played on the way
-  const cards = await cardsOf('pack-bakery-next.json', 'pack-pastry.json');
-  await pinClock(page, '2026-11-16T09:00:00Z');
-  await firstRun(page);
-  await install(page, 'bundle-bakery-next.json');
-  // The start screen: the session length, the large button, Import and the rest.
-  await expect(page.locator('.length')).toHaveCount(4);
-  await expectControlsSized(page);
+for (const scheme of ['dark', 'light']) {
+  test(`acceptance test 11 (${scheme}): every control on the places, a session and its summary is at least 48 px and 8 px apart, the main action and the navigation bar in the lower third`, async ({
+    page,
+  }) => {
+    test.setTimeout(120_000); // a whole session is played on the way
+    await page.emulateMedia({ colorScheme: scheme });
+    const cards = await cardsOf('pack-bakery-next.json', 'pack-pastry.json');
+    await pinClock(page, '2026-11-16T09:00:00Z');
+    await firstRun(page);
+    await install(page, 'bundle-bakery-next.json');
 
-  // A card in a session, with End session at the top: a teach card, then one with answers.
-  await page.locator('.session-button').click();
-  await expect(page.locator('.card-screen')).toHaveAttribute('data-card-id', 'bk_l01_c01');
-  await expectControlsSized(page);
-  await playSession(page, cards, { upTo: 1 });
-  await expect(page.locator('.card-screen')).toHaveAttribute('data-card-id', 'bk_l01_c02');
-  await expectControlsSized(page);
+    // Home with its large button, then the other three places.
+    await expectControlsSized(page);
+    await expectFootInLowerThird(page);
+    for (const place of ['Library', 'Glossary', 'Settings']) {
+      await gotoPlace(page, place);
+      await expectControlsSized(page);
+      await expectFootInLowerThird(page);
+    }
+    await expect(page.locator('.choices-length .toggle')).toHaveCount(4);
+    await expect(page.locator('.choices-theme .toggle')).toHaveCount(3);
 
-  // The End session question.
-  await page.getByRole('button', { name: 'End session', exact: true }).click();
-  await expect(page.locator('.end-question')).toBeVisible();
-  await expectControlsSized(page);
-  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    // A session: a teach card, then one with answers, and the End session question.
+    await gotoPlace(page, 'Home');
+    await page.locator('.session-button').click();
+    await expect(page.locator('.card-screen')).toHaveAttribute('data-card-id', 'bk_l01_c01');
+    await expectControlsSized(page);
+    await playSession(page, cards, { upTo: 1 });
+    await expect(page.locator('.card-screen')).toHaveAttribute('data-card-id', 'bk_l01_c02');
+    await expectControlsSized(page);
+    await page.getByRole('button', { name: 'End session', exact: true }).click();
+    await expect(page.locator('.end-question')).toBeVisible();
+    await expectControlsSized(page);
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 
-  // The summary, then the start screen with a completed lesson and its Redo.
-  await playSession(page, cards);
-  await expect(page.locator('.summary-screen')).toBeVisible();
-  await expectControlsSized(page);
-  await done(page);
-  await expect(page.getByRole('button', { name: 'Redo lesson 1', exact: true })).toBeVisible();
-  await expectControlsSized(page);
-  await redoLesson(page, 1);
-  await expectControlsSized(page);
-});
+    // The summary, then the Library with a completed lesson and its Redo, and a redo.
+    await playSession(page, cards);
+    await expect(page.locator('.summary-screen')).toBeVisible();
+    await expectControlsSized(page);
+    await done(page);
+    await gotoPlace(page, 'Library');
+    await expect(page.getByRole('button', { name: 'Redo lesson 1', exact: true })).toBeVisible();
+    await expectControlsSized(page);
+    await expectFootInLowerThird(page);
+    await redoLesson(page, 1);
+    await expectControlsSized(page);
+  });
+}
 
-test('every control on the Phase 2 screens is at least 48 px, with 8 px between controls', async ({ page }) => {
+test('every control on first run, Import, a refusal and the questions is at least 48 px, with 8 px between controls', async ({ page }) => {
   await page.addInitScript(() => {
     delete Navigator.prototype.share;
     delete Navigator.prototype.canShare;
@@ -45,9 +59,8 @@ test('every control on the Phase 2 screens is at least 48 px, with 8 px between 
   await expect(page.locator('.first-run')).toBeVisible();
   await expectControlsSized(page);
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
-  await expectControlsSized(page); // with both field problems showing
+  await expectControlsSized(page); // with the name's problem showing
   await page.getByLabel('Your name').fill('Sam');
-  await page.getByLabel('Your role').fill('Baker');
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(page.locator('.first-run-import')).toBeVisible();
   await expectControlsSized(page);
@@ -56,8 +69,8 @@ test('every control on the Phase 2 screens is at least 48 px, with 8 px between 
   await expect(page.locator('.import-confirm')).toBeVisible();
   await expectControlsSized(page);
   await page.getByRole('button', { name: 'Install', exact: true }).click();
-  await expect(page.locator('.start-screen')).toBeVisible();
-  await install(page, 'pack-bakery-next.json');
+  await expect(page.locator('.home-screen')).toBeVisible();
+  await install(page, 'pack-bakery-next.json', { stay: true });
   await expectControlsSized(page);
 
   await chooseFile(page, 'Import', 'pack-bakery-old.json');
@@ -74,5 +87,5 @@ test('every control on the Phase 2 screens is at least 48 px, with 8 px between 
   await page.getByRole('button', { name: 'Skip', exact: true }).click();
   await expectControlsSized(page);
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await expect(page.locator('.start-screen')).toBeVisible();
+  await expect(page.locator('.settings-screen')).toBeVisible();
 });

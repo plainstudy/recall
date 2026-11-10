@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { done, playCards, playLesson, readFixturePack, redoLesson, setUpCompleted } from './helpers.js';
+import { done, gotoPlace, playCards, playLesson, readFixturePack, redoLesson, setUpCompleted } from './helpers.js';
 
 const texts = (page, selector) => page.locator(selector).allTextContents();
 
@@ -49,9 +49,10 @@ test('acceptance test 25 across a reload: the first presentation after it differ
   await setUpCompleted(page, testInfo);
   let last = await reachCard();
   for (let i = 0; i < 3; i++) {
-    // A redo isn't stored: after a reload the app is back on the start screen.
+    // A redo isn't stored: after a reload the app is back Home.
     await page.reload();
-    await expect(page.locator('.start-screen')).toBeVisible();
+    await expect(page.locator('.home-screen')).toBeVisible();
+    await gotoPlace(page, 'Library');
     await expect(page.locator('.lesson')).toHaveCount(2);
     const first = await reachCard();
     expect(first).not.toEqual(last);

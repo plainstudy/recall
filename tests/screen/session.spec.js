@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { DAY_MS, answer, cardsOf, done, firstRun, install, pinClock, playSession, readStored, watchErrors } from './helpers.js';
+import { DAY_MS, answer, cardsOf, done, expectStreak, firstRun, gotoPlace, install, pinClock, playSession, readStored, watchErrors } from './helpers.js';
 
 // These tests play whole sessions card by card, so each gets more than the usual time.
 test.describe.configure({ timeout: 90_000 });
@@ -29,12 +29,16 @@ test('a daily session from Start to the summary, then Start another session', as
   const errors = watchErrors(page);
   const cards = await cardsOf(...PACKS);
   await newLearner(page);
-  await expect(page.locator('.streak-line')).toHaveText('Streak 0, longest 0, freezes left 2.');
-  await expect(page.locator('.due-line')).toHaveText('No reviews due today.');
-  await expect(page.locator('.place-line')).toHaveText('Lesson 1 of 4: Starting a dough');
-  await expect(page.locator('.length[aria-pressed="true"]')).toHaveText('11 min');
+  await expectStreak(page, 0, 0, 2);
+  await expect(page.locator('.scorecard-due')).toHaveAttribute('aria-label', '0 reviews due today');
+  await expect(page.locator('.place-line')).toHaveText('Lesson 1 of 4');
+  await expect(page.locator('.current-title')).toHaveText('Starting a dough');
+  await gotoPlace(page, 'Settings');
+  await expect(page.locator('.choices-length [aria-pressed="true"]')).toHaveText('11 min');
+  await gotoPlace(page, 'Library');
   expect(await states(page)).toEqual(['current', 'locked', 'locked', 'locked']);
 
+  await gotoPlace(page, 'Home');
   await start(page);
   await expect(page.locator('.card-place')).toHaveText('Card 1 of 10');
   const first = await playSession(page, cards);
@@ -60,11 +64,14 @@ test('a daily session from Start to the summary, then Start another session', as
   expect(stored.mirror).toEqual(stored.progress);
 
   await done(page);
-  await expect(page.locator('.streak-line')).toHaveText('Streak 1, longest 1, freezes left 2.');
-  await expect(page.locator('.place-line')).toHaveText('Lesson 2 of 4: At the oven');
+  await expectStreak(page, 1, 1, 2);
+  await expect(page.locator('.place-line')).toHaveText('Lesson 2 of 4');
+  await expect(page.locator('.current-title')).toHaveText('At the oven');
+  await gotoPlace(page, 'Library');
   expect(await states(page)).toEqual(['completed', 'current', 'locked', 'locked']);
 
   // After the day's session the button offers another one, which carries on with the lesson.
+  await gotoPlace(page, 'Home');
   await start(page, 'Start another session');
   const second = await playSession(page, cards);
   expect(second).toEqual(['c01', 'c02', 'c03', 'c04', 'c05', 'c07'].map((c) => `bk_l02_${c}`));
@@ -81,21 +88,26 @@ test('a daily session from Start to the summary, then Start another session', as
   expect(stored.progress.sessionLog.map((s) => s.completed)).toEqual([true, true]);
   expect(new Set(stored.progress.sessionLog.map((s) => s.id)).size).toBe(2);
   await done(page);
-  expect(await states(page)).toEqual(['completed', 'completed', 'current', 'locked']);
   await expect(button(page)).toHaveText('Start another session');
+  await gotoPlace(page, 'Library');
+  expect(await states(page)).toEqual(['completed', 'completed', 'current', 'locked']);
   expect(errors).toEqual([]);
 });
 
 test('a completed 5-minute session counts for the streak (test 18)', async ({ page }) => {
   const cards = await cardsOf(...PACKS);
   await newLearner(page);
+  // The session length is chosen in Settings.
+  await gotoPlace(page, 'Settings');
   await page.getByRole('button', { name: '5 min', exact: true }).click();
-  await expect(page.locator('.length[aria-pressed="true"]')).toHaveText('5 min');
+  await expect(page.locator('.choices-length [aria-pressed="true"]')).toHaveText('5 min');
   expect((await readStored(page)).progress.settings.sessionSeconds).toBe(300);
   // The length is kept across a restart.
   await page.reload();
-  await expect(page.locator('.length[aria-pressed="true"]')).toHaveText('5 min');
+  await gotoPlace(page, 'Settings');
+  await expect(page.locator('.choices-length [aria-pressed="true"]')).toHaveText('5 min');
 
+  await gotoPlace(page, 'Home');
   await start(page);
   await playSession(page, cards);
   await expect(lines(page).nth(4)).toHaveText('Streak 1, longest 1, freezes left 2.');
@@ -160,9 +172,9 @@ test('End session asks first, keeps the answers, and Continue carries on at the 
 
   await page.getByRole('button', { name: 'End session', exact: true }).click();
   await page.locator('.end-question').getByRole('button', { name: 'End session', exact: true }).click();
-  await expect(page.locator('.start-screen')).toBeVisible();
+  await expect(page.locator('.home-screen')).toBeVisible();
   await expect(button(page)).toHaveText("Continue today's session");
-  await expect(page.locator('.streak-line')).toHaveText('Streak 0, longest 0, freezes left 2.');
+  await expectStreak(page, 0, 0, 2);
 
   // The answers are saved, the day doesn't count, and the record waits.
   const left = await readStored(page);
@@ -198,7 +210,7 @@ test('closing the app part-way keeps the session: after a restart, Continue carr
 
   // Closed with a card on screen and not yet answered: it comes back.
   await page.reload();
-  await expect(page.locator('.start-screen')).toBeVisible();
+  await expect(page.locator('.home-screen')).toBeVisible();
   await expect(button(page)).toHaveText("Continue today's session");
   await button(page).click();
   await expect(screen).toHaveAttribute('data-card-id', 'bk_l01_c05');
@@ -235,10 +247,10 @@ test('an unfinished session is discarded the next day, and its answers stay (tes
 
   await pinClock(page, new Date(NOW).getTime() + DAY_MS);
   await page.reload();
-  await expect(page.locator('.start-screen')).toBeVisible();
+  await expect(page.locator('.home-screen')).toBeVisible();
   await expect(button(page)).toHaveText("Start today's session");
-  await expect(page.locator('.due-line')).toHaveText('1 review due today.');
-  await expect(page.locator('.streak-line')).toHaveText('Streak 0, longest 0, freezes left 2.');
+  await expect(page.locator('.scorecard-due')).toHaveAttribute('aria-label', '1 review due today');
+  await expectStreak(page, 0, 0, 2);
   const stored = await readStored(page);
   expect(stored.session).toBeNull();
   expect([stored.progress.sessionLog.length, stored.progress.sessionLog[0].completed, stored.progress.sessionLog[0].answered]).toEqual([1, false, 1]);

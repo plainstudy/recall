@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { PROGRESS_MESSAGES } from '../../engine/progress.js';
-import { chooseFile, firstRun, install, pinClock, readStored } from './helpers.js';
+import { chooseFile, firstRun, gotoPlace, install, pinClock, readStored } from './helpers.js';
 import { seededReport } from './seed.js';
 
 const REPORT_NAME = /^Bakery_School_Report_Sam-Baker_\d{4}-\d{2}-\d{2}\.md$/;
@@ -15,7 +15,7 @@ async function restore(page, path) {
   await chooseFile(page, 'Import', path);
   await expect(page.locator('.import-confirm')).toHaveAttribute('data-kind', 'report');
   await page.getByRole('button', { name: 'Restore', exact: true }).click();
-  await expect(page.locator('.start-screen')).toBeVisible();
+  await expect(page.locator('.settings-screen')).toBeVisible();
 }
 
 test('a saved report restores a wiped browser exactly: streak, position, every atom’s box and due date (test 20)', async ({
@@ -27,7 +27,7 @@ test('a saved report restores a wiped browser exactly: streak, position, every a
   // The clock is held a few hours after the seeded report's time, on the same day.
   await pinClock(page);
   const seed = await seededReport(testInfo.outputPath('seed.md'));
-  await firstRun(page, { name: 'Test', role: 'Test' });
+  await firstRun(page, { name: 'Test' });
   await install(page, 'bundle-bakery.json');
   await restore(page, seed.path);
 
@@ -47,11 +47,12 @@ test('a saved report restores a wiped browser exactly: streak, position, every a
   const context = await browser.newContext({ baseURL, viewport: { width: 360, height: 800 } });
   const wiped = await context.newPage();
   await pinClock(wiped);
-  await firstRun(wiped, { name: 'Test', role: 'Test' });
+  await firstRun(wiped, { name: 'Test' });
   await install(wiped, 'bundle-bakery.json');
   await restore(wiped, path);
-  await expect(wiped.locator('.learner')).toHaveText('Sam Baker · Baker');
-  await expect(wiped.locator('.lesson-current .lesson-title')).toHaveText('At the oven');
+  await gotoPlace(wiped, 'Home');
+  await expect(wiped.locator('.learner')).toHaveText('Sam Baker');
+  await expect(wiped.locator('.current-title')).toHaveText('At the oven');
   const restored = (await readStored(wiped)).progress;
   expect(restored.streak).toEqual(saved.streak);
   expect(restored.position).toEqual(saved.position);
@@ -80,6 +81,7 @@ test('a share that goes ahead marks the report saved; a cancelled one changes no
   await firstRun(page);
   await install(page, 'bundle-bakery.json');
   const before = (await readStored(page)).progress;
+  await gotoPlace(page, 'Settings');
 
   await page.evaluate(() => (window.cancelShare = true));
   await page.getByRole('button', { name: 'Save report now', exact: true }).click();

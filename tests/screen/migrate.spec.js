@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { isId } from '../../engine/ids.js';
 import { asSchemaTwo } from '../unit/fixtures.mjs';
-import { chooseFile, firstRun, install, pinClock, readStored, watchErrors, writeStored } from './helpers.js';
+import { chooseFile, firstRun, gotoPlace, install, pinClock, readStored, watchErrors, writeStored } from './helpers.js';
 import { seededReport } from './seed.js';
 
 test('progress saved by an older app migrates on start with nothing lost, once, into both copies (test 38)', async ({ page }) => {
@@ -15,8 +15,9 @@ test('progress saved by an older app migrates on start with nothing lost, once, 
   for (const mirror of [true, false]) {
     await writeStored(page, older, { mirror });
     await page.reload();
-    await expect(page.locator('.start-screen')).toBeVisible();
-    await expect(page.locator('.learner')).toHaveText('Sam · Baker');
+    await expect(page.locator('.home-screen')).toBeVisible();
+    await expect(page.locator('.learner')).toHaveText('Sam');
+    await gotoPlace(page, 'Library');
     await expect(page.locator('.lesson')).toHaveCount(2);
     const stored = await readStored(page);
     expect(stored.progress.schemaVersion).toBe(3);
@@ -27,7 +28,7 @@ test('progress saved by an older app migrates on start with nothing lost, once, 
 
     // The ids are made once: the next start finds them and keeps them.
     await page.reload();
-    await expect(page.locator('.start-screen')).toBeVisible();
+    await expect(page.locator('.home-screen')).toBeVisible();
     expect((await readStored(page)).progress).toEqual(stored.progress);
   }
   expect(errors).toEqual([]);
@@ -37,7 +38,7 @@ test('a report from an older app restores, taking a new learner id and keeping t
   const seed = await seededReport(testInfo.outputPath('older.md'), { older: true });
   expect(seed.progress.schemaVersion).toBe(2);
   await pinClock(page);
-  await firstRun(page, { name: 'Test', role: 'Test' });
+  await firstRun(page, { name: 'Test' });
   await install(page, 'bundle-bakery.json');
   const phone = (await readStored(page)).progress;
 
@@ -45,9 +46,10 @@ test('a report from an older app restores, taking a new learner id and keeping t
   await expect(page.locator('.import-confirm')).toHaveAttribute('data-kind', 'report');
   await expect(page.locator('.change-line').first()).toHaveText("Restore Sam Baker's progress from 15 November 2026? This replaces the progress on this phone.");
   await page.getByRole('button', { name: 'Restore', exact: true }).click();
-  await expect(page.locator('.start-screen')).toBeVisible();
-  await expect(page.locator('.learner')).toHaveText('Sam Baker · Baker');
-  await expect(page.locator('.lesson-current .lesson-title')).toHaveText('At the oven');
+  await expect(page.locator('.settings-screen')).toBeVisible();
+  await gotoPlace(page, 'Home');
+  await expect(page.locator('.learner')).toHaveText('Sam Baker');
+  await expect(page.locator('.current-title')).toHaveText('At the oven');
 
   const restored = (await readStored(page)).progress;
   expect(restored.schemaVersion).toBe(3);

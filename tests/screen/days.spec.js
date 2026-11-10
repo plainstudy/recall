@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { addDays, learnerDay } from '../../engine/days.js';
-import { DAY_MS, cardsOf, done, expectControlsSized, firstRun, install, pageClock, pinClock, playSession, readStored } from './helpers.js';
+import { DAY_MS, cardsOf, done, expectControlsSized, expectStreak, firstRun, gotoPlace, install, pageClock, pinClock, playSession, readStored } from './helpers.js';
 
 // Each test plays two or three whole sessions, so each gets more than the usual time.
 test.describe.configure({ timeout: 90_000 });
@@ -28,14 +28,14 @@ const backOnScreen = (page) => page.evaluate(() => document.dispatchEvent(new Ev
 test('the next day the reviews come up, mixed into the lesson, and the streak reaches 2', async ({ page }) => {
   const cards = await cardsOf(...PACKS);
   const first = await dayOne(page, cards);
-  await expect(page.locator('.due-line')).toHaveText('No reviews due today.');
+  await expect(page.locator('.scorecard-due')).toHaveAttribute('aria-label', '0 reviews due today');
 
   await pinClock(page, NOW + DAY_MS);
   await page.reload();
-  await expect(page.locator('.start-screen')).toBeVisible();
+  await expect(page.locator('.home-screen')).toBeVisible();
   await expect(button(page)).toHaveText("Start today's session");
-  await expect(page.locator('.due-line')).toHaveText('8 reviews due today.');
-  await expect(page.locator('.streak-line')).toHaveText('Streak 1, longest 1, freezes left 2.');
+  await expect(page.locator('.scorecard-due')).toHaveAttribute('aria-label', '8 reviews due today');
+  await expectStreak(page, 1, 1, 2);
 
   await button(page).click();
   const played = await playSession(page, cards);
@@ -70,20 +70,20 @@ test('the next day the reviews come up, mixed into the lesson, and the streak re
 test('a missed day uses a freeze when the app comes back on screen; with none left, the streak resets', async ({ page }) => {
   const cards = await cardsOf(...PACKS);
   const first = await dayOne(page, cards);
-  await expect(page.locator('.streak-line')).toHaveText('Streak 1, longest 1, freezes left 2.');
+  await expectStreak(page, 1, 1, 2);
 
   // Two days later, the app still open: the day between was missed.
   await pinClock(page, NOW + 2 * DAY_MS);
   await backOnScreen(page);
-  await expect(page.locator('.streak-line')).toHaveText('Streak 1, longest 1, freezes left 1.');
-  await expect(page.locator('.due-line')).toHaveText('8 reviews due today.');
+  await expectStreak(page, 1, 1, 1);
+  await expect(page.locator('.scorecard-due')).toHaveAttribute('aria-label', '8 reviews due today');
   let { progress, mirror } = await readStored(page);
   expect(progress.streak.freezesUsedOn).toEqual([addDays(first, 1)]);
   expect(progress.streak.checkedThrough).toBe(addDays(first, 1));
   expect(mirror).toEqual(progress);
   // Coming back again the same day checks nothing twice.
   await backOnScreen(page);
-  await expect(page.locator('.streak-line')).toHaveText('Streak 1, longest 1, freezes left 1.');
+  await expectStreak(page, 1, 1, 1);
   expect((await readStored(page)).progress.streak).toEqual(progress.streak);
 
   await button(page).click();
@@ -94,7 +94,7 @@ test('a missed day uses a freeze when the app comes back on screen; with none le
   // Three more days pass: the first uses the last freeze, the second resets the streak.
   await pinClock(page, NOW + 5 * DAY_MS);
   await page.reload();
-  await expect(page.locator('.streak-line')).toHaveText('Streak 0, longest 2, freezes left 0.');
+  await expectStreak(page, 0, 2, 0);
   ({ progress } = await readStored(page));
   expect(progress.streak.freezesUsedOn).toEqual([addDays(first, 1), addDays(first, 3)]);
   await button(page).click();

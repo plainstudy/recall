@@ -332,6 +332,11 @@ button:disabled {
   color: var(--label);
 }
 
+.secondary:disabled {
+  border-color: var(--rule);
+  color: var(--muted);
+}
+
 /* A choice among a few, such as the session length: outlined, and filled when chosen. */
 .toggle[aria-pressed='true'] {
   border-color: var(--accent);
@@ -395,7 +400,7 @@ button:disabled {
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--gap);
   margin-bottom: 16px;
 }
 
@@ -867,7 +872,7 @@ ul.answer-key-list {
   font-size: 20px;
 }
 
-/* ------------------------------------------------------- the start screen and its parts */
+/* --------------------------------------------------------------------------- places */
 
 .learner,
 .installed-name,
@@ -875,7 +880,11 @@ ul.answer-key-list {
 .change-line,
 .warning,
 .question-text p,
-.app-title {
+.app-title,
+.current-title,
+.role-value,
+.address,
+.term-name {
   overflow-wrap: anywhere;
 }
 
@@ -885,21 +894,212 @@ ul.answer-key-list {
   white-space: pre-line;
 }
 
-.start-section {
+/* The foot of a place: its main action, then the navigation bar, both in the lower third. */
+.screen-foot {
+  position: sticky;
+  bottom: 0;
+  background: var(--ink);
+}
+
+.screen-foot > .action-bar {
+  position: static;
+  padding-bottom: var(--gap);
+}
+
+.nav-bar {
+  display: flex;
+  gap: var(--gap);
+  margin: var(--gap) -16px 0;
+  padding: 6px 16px max(6px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--rule);
+  background: var(--panel);
+}
+
+.screen-foot > .action-bar + .nav-bar {
+  margin-top: 0;
+}
+
+.nav-place {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: 4px 2px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.nav-place .icon {
+  box-sizing: content-box;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  padding: 3px 14px;
+  border-radius: 999px;
+  stroke-width: 2;
+  transition: background-color 0.15s var(--ease);
+}
+
+.nav-place[aria-current='page'] {
+  color: var(--text);
+}
+
+.nav-place[aria-current='page'] .icon {
+  background: var(--accent);
+  stroke: var(--on-accent);
+}
+
+.nav-place:active:not([aria-current='page']) .icon {
+  background: var(--rule);
+}
+
+/* Home */
+.scorecards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap);
+}
+
+.scorecard {
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 9px;
+  background: var(--panel);
+}
+
+.scorecard .label {
+  margin-bottom: 2px;
+}
+
+.scorecard-figure {
+  color: var(--heading);
+  font: 600 30px/1.15 var(--heading-font);
+}
+
+.scorecard-some .scorecard-figure {
+  color: var(--slowdown);
+}
+
+.current-lesson {
+  margin-top: 12px;
+}
+
+.current-lesson .label {
+  margin-bottom: 2px;
+}
+
+.place-line {
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.current-title {
+  color: var(--heading);
+  font: 600 20px/1.3 var(--heading-font);
+}
+
+.home-notice {
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
+.notice-update {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  border-left-color: var(--accent);
+  background: var(--panel);
+}
+
+.notice-update .restart {
+  align-self: flex-start;
+}
+
+.notice-done {
+  border-left-color: var(--running);
+  background: var(--tint-running);
+}
+
+/* The Library */
+.review-filter {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.pack {
   padding-top: 16px;
 }
 
-.nothing-installed {
-  margin-top: 8px;
-  color: var(--muted);
+.pack-heading {
+  margin: 0;
 }
 
-.pack-heading {
-  margin: 8px 0 0;
+.lesson-markers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.marker-current {
+  background: transparent;
+  color: var(--label);
 }
 
 .track-stop {
   margin-top: 16px;
+}
+
+/* Settings */
+.settings-section {
+  padding-top: 20px;
+}
+
+.settings-section .field {
+  margin-bottom: 0;
+}
+
+.save-name {
+  align-self: flex-start;
+}
+
+.role {
+  margin-top: 16px;
+}
+
+.role-label {
+  color: var(--label);
+  font-weight: 600;
+}
+
+.choices {
+  display: flex;
+  gap: var(--gap);
+}
+
+.choices > .toggle {
+  flex: 1 1 0;
+  padding: 11px 4px;
+}
+
+.muted-line,
+.address {
+  color: var(--muted);
+  font-size: 16px;
+}
+
+/* The Glossary */
+.term-names {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 0 0 20px;
 }
 
 .installed-list {
@@ -922,13 +1122,6 @@ ul.answer-key-list {
   flex: 1 1 auto;
 }
 
-.start-actions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap);
-}
-
-.start-screen .version,
 .first-run .version {
   padding-top: 16px;
 }
@@ -962,38 +1155,6 @@ ul.answer-key-list {
   color: var(--muted);
 }
 
-.today {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.place-line {
-  overflow-wrap: anywhere;
-  font-weight: 600;
-}
-
-.session-notice {
-  margin-top: 16px;
-  margin-bottom: 0;
-}
-
-.length-choice {
-  display: flex;
-  gap: var(--gap);
-}
-
-.length {
-  flex: 1 1 0;
-  padding: 11px 4px;
-}
-
-.length[aria-pressed='true'] {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--on-accent);
-}
-
 .card-top {
   display: flex;
   align-items: center;
@@ -1023,6 +1184,43 @@ ul.answer-key-list {
   gap: var(--gap);
   padding-top: 24px;
 }
+
+/* The one moment: on the summary, the reviews that moved up a box shift up once. */
+.moved-up {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 2px 0 4px;
+}
+
+.moved-up-mark {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--running);
+  animation: moved-up 0.6s var(--ease) both;
+}
+
+@keyframes moved-up {
+  from {
+    transform: translateY(10px);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.moved-up-mark:nth-child(2) { animation-delay: 0.05s; }
+.moved-up-mark:nth-child(3) { animation-delay: 0.1s; }
+.moved-up-mark:nth-child(4) { animation-delay: 0.15s; }
+.moved-up-mark:nth-child(5) { animation-delay: 0.2s; }
+.moved-up-mark:nth-child(6) { animation-delay: 0.25s; }
+.moved-up-mark:nth-child(7) { animation-delay: 0.3s; }
+.moved-up-mark:nth-child(8) { animation-delay: 0.35s; }
+.moved-up-mark:nth-child(9) { animation-delay: 0.4s; }
+.moved-up-mark:nth-child(10) { animation-delay: 0.45s; }
+.moved-up-mark:nth-child(11) { animation-delay: 0.5s; }
+.moved-up-mark:nth-child(12) { animation-delay: 0.55s; }
 
 /* ----------------------------------------------------------------------------- motion */
 

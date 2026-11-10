@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { cardsOf, done, firstRun, install, pinClock, playSession, readFixturePack, readStored, redoLesson } from './helpers.js';
+import { cardsOf, done, expectStreak, firstRun, gotoPlace, install, pinClock, playSession, readFixturePack, readStored, redoLesson } from './helpers.js';
 
 // These tests play whole sessions card by card, so each gets more than the usual time.
 test.describe.configure({ timeout: 90_000 });
@@ -20,6 +20,7 @@ async function newLearner(page) {
 test('lessons open one at a time: the lesson after the current one can’t be opened, and a completed lesson offers Redo (test 28)', async ({ page }) => {
   const cards = await cardsOf(...PACKS);
   await newLearner(page);
+  await gotoPlace(page, 'Library');
   expect(await states(page)).toEqual(['current', 'locked', 'locked', 'locked']);
   await expect(page.locator('.lesson-title')).toHaveText(['Starting a dough', 'At the oven', 'Layers of butter', 'From the tin to the counter']);
   await expect(page.locator('.pack-heading')).toHaveText(['Bread basics', 'Pastry basics']);
@@ -27,21 +28,23 @@ test('lessons open one at a time: the lesson after the current one can’t be op
   // No lesson is a control: the current one opens only through the daily session, and a
   // locked one shows its title and nothing else, though this one needs review.
   await expect(page.locator('.lesson button, .lesson [role="button"], button.lesson')).toHaveCount(0);
-  await expect(rows(page).nth(0).locator('.lesson-marker')).toHaveText(['Current']);
-  for (const n of [1, 2, 3]) await expect(rows(page).nth(n).locator('.lesson-marker')).toHaveCount(0);
+  await expect(rows(page).nth(0).locator('.marker')).toHaveText(['Current']);
+  for (const n of [1, 2, 3]) await expect(rows(page).nth(n).locator('.marker')).toHaveCount(0);
   for (const n of [0, 1, 2, 3]) {
     await rows(page).nth(n).click();
     await rows(page).nth(n).locator('.lesson-title').click();
   }
-  await expect(page.locator('.start-screen')).toBeVisible();
+  await expect(page.locator('.library-screen')).toBeVisible();
   await expect(page.locator('.card-screen')).toHaveCount(0);
 
+  await gotoPlace(page, 'Home');
   await button(page).click();
   await playSession(page, cards);
   await done(page);
+  await gotoPlace(page, 'Library');
   expect(await states(page)).toEqual(['completed', 'current', 'locked', 'locked']);
-  await expect(rows(page).nth(0).locator('.lesson-marker')).toHaveText(['Completed']);
-  await expect(rows(page).nth(1).locator('.lesson-marker')).toHaveText(['Current', 'Needs review']);
+  await expect(rows(page).nth(0).locator('.marker')).toHaveText(['Completed']);
+  await expect(rows(page).nth(1).locator('.marker')).toHaveText(['Current', 'Needs review']);
   await expect(page.getByRole('button', { name: /^Redo lesson/ })).toHaveCount(1);
   // Still nothing opens from the current lesson or a locked one.
   for (const n of [1, 2, 3]) await rows(page).nth(n).locator('.lesson-title').click();
@@ -63,7 +66,7 @@ test('a redo replays every card in order, leaves the position and the streak alo
   expect(played).toEqual(lesson.cards.map((card) => card.cardId));
   const summary = page.locator('.summary-screen');
   await expect(summary).toHaveAttribute('data-kind', 'redo');
-  await expect(summary.locator('.card-place')).toHaveText('Redo finished');
+  await expect(summary.locator('h1')).toHaveText('Redo finished');
   await expect(summary.locator('.lesson-heading')).toHaveText('Starting a dough');
   const text = await page.locator('.summary-line').allTextContents();
   expect(text.slice(0, 3)).toEqual(['10 cards seen.', '8 of 8 answers correct, 100%.', 'No traps.']);
@@ -81,8 +84,11 @@ test('a redo replays every card in order, leaves the position and the streak alo
   }
   expect(after.session).toBeNull();
   expect(after.mirror).toEqual(after.progress);
+  // Done goes back to the Library, where the redo was started.
   await done(page);
-  await expect(page.locator('.streak-line')).toHaveText('Streak 1, longest 1, freezes left 2.');
+  await expect(page.locator('.library-screen')).toBeVisible();
+  await gotoPlace(page, 'Home');
+  await expectStreak(page, 1, 1, 2);
 });
 
 test('a wrong answer in a redo comes back within it, and a redo beside an unfinished session leaves that session to continue', async ({ page }) => {
@@ -111,11 +117,12 @@ test('a wrong answer in a redo comes back within it, and a redo beside an unfini
   await page.getByRole('button', { name: 'End session', exact: true }).click();
   await expect(page.locator('.end-question .question-text p')).toHaveText(['End this redo?', 'Your answers are saved.']);
   await page.locator('.end-question').getByRole('button', { name: 'End session', exact: true }).click();
-  await expect(page.locator('.start-screen')).toBeVisible();
+  await expect(page.locator('.library-screen')).toBeVisible();
   const stored = await readStored(page);
   expect(stored.session).toEqual(waiting);
   expect(stored.progress.atoms['atom.ingredient.hydration'].lastMissedCardId).toBe('bk_l01_c04');
   expect(stored.progress.sessionLog.map((s) => [s.kind, s.completed])).toEqual([['daily', true], ['daily', false], ['redo', false]]);
+  await gotoPlace(page, 'Home');
   await expect(button(page)).toHaveText("Continue today's session");
   await button(page).click();
   await expect(page.locator('.card-screen')).toHaveAttribute('data-card-id', waiting.plan[2].cardId);
