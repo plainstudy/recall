@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { FORMAT_MESSAGES } from '../../engine/formats.js';
 import { MESSAGES } from '../../engine/validate.js';
-import { chooseFile, firstRun, install, openLesson, readFixturePack, readStored, setUp, watchErrors } from './helpers.js';
+import { chooseFile, firstRun, install, pinClock, readFixturePack, readStored, redoLesson, restoreSeed, setUp, setUpCompleted, watchErrors } from './helpers.js';
 
 const asFile = (name, data) => ({ name, mimeType: 'application/json', buffer: Buffer.from(typeof data === 'string' ? data : JSON.stringify(data)) });
 
@@ -26,13 +26,21 @@ test('a pack in the older shape is refused with the older-format message, and no
   expect(errors).toEqual([]);
 });
 
-test('the lesson list leaves out unverified lessons and marks those that need review', async ({ page }) => {
+test('the lesson list leaves out unverified lessons and marks those that need review, once they are open', async ({ page }, testInfo) => {
+  await pinClock(page);
   await setUp(page);
   const lessons = page.locator('.lesson');
   await expect(lessons).toHaveCount(2);
   await expect(page.getByText('An unverified draft')).toHaveCount(0);
   await expect(lessons.nth(0).locator('.lesson-marker', { hasText: 'Needs review' })).toHaveCount(0);
+  // For a new learner the second lesson is locked: its title and nothing else.
+  await expect(lessons.nth(1)).toHaveAttribute('data-state', 'locked');
+  await expect(lessons.nth(1).locator('.lesson-marker')).toHaveCount(0);
+  // A learner who has reached it sees the marker.
+  await restoreSeed(page, testInfo);
+  await expect(lessons.nth(1)).toHaveAttribute('data-state', 'current');
   await expect(lessons.nth(1).locator('.lesson-marker', { hasText: 'Needs review' })).toHaveCount(1);
+  await expect(lessons.nth(0).locator('.lesson-marker', { hasText: 'Needs review' })).toHaveCount(0);
 });
 
 test('a file the app can’t import gets a plain message, never a blank screen', async ({ page }) => {
@@ -89,12 +97,12 @@ test('cards the engine can’t show are refused at import, with every problem co
   await expect(page.getByText('Nothing installed yet.')).toBeVisible();
 });
 
-test('figures: stepped frames show one step at a time, and a missing figure is left out', async ({ page }) => {
+test('figures: stepped frames show one step at a time, and a missing figure is left out', async ({ page }, testInfo) => {
   const pack = await readFixturePack('pack-bakery.json');
   const stepped = pack.lessons[0].cards[2];
   expect(stepped.resolvedFigure.layers.length).toBe(3);
-  await setUp(page);
-  await openLesson(page, 1);
+  await setUpCompleted(page, testInfo);
+  await redoLesson(page, 1);
   const screen = page.locator('.card-screen');
   const action = page.locator('.action-bar .primary');
   await expect(screen.locator('.figure img')).toHaveCount(1);
@@ -114,15 +122,15 @@ test('figures: stepped frames show one step at a time, and a missing figure is l
 
   await page.goBack();
   await expect(page.locator('.start-screen')).toBeVisible();
-  await openLesson(page, 2);
+  await redoLesson(page, 2);
   await expect(screen).toHaveAttribute('data-card-id', pack.lessons[1].cards[0].cardId);
   await expect(screen.locator('.prompt')).toBeVisible();
   await expect(screen.locator('.figure')).toHaveCount(0);
 });
 
-test('Back from a lesson returns to the start screen', async ({ page }) => {
-  await setUp(page);
-  await openLesson(page, 2);
+test('Back from a lesson returns to the start screen', async ({ page }, testInfo) => {
+  await setUpCompleted(page, testInfo);
+  await redoLesson(page, 2);
   await expect(page.locator('.card-screen')).toBeVisible();
   await page.goBack();
   await expect(page.locator('.start-screen')).toBeVisible();

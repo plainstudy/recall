@@ -57,9 +57,10 @@ const PAGE = [
   './ui/first-run.js',
   './ui/import-flow.js',
   './ui/platform.js',
-  './ui/player.js',
+  './ui/session-runner.js',
   './ui/start-screen.js',
   './ui/storage.js',
+  './ui/summary-screen.js',
 ];
 
 self.addEventListener('install', (event) => {

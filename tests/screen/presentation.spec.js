@@ -1,11 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { openLesson, playCards, playLesson, readFixturePack, setUp } from './helpers.js';
+import { done, playCards, playLesson, readFixturePack, redoLesson, setUpCompleted } from './helpers.js';
 
 const texts = (page, selector) => page.locator(selector).allTextContents();
 
-test('acceptance test 25: shown again, a card’s lists come in a new order, and the right option still scores', async ({
-  page,
-}) => {
+// The lessons are completed by a seeded report, and played through Redo.
+test('acceptance test 25: shown again, a card’s lists come in a new order, and the right option still scores', async ({ page }, testInfo) => {
   const pack = await readFixturePack('pack-bakery.json');
   const lesson = pack.lessons[0];
   const mcq = lesson.cards.find((c) => c.type === 'mcq');
@@ -22,12 +21,13 @@ test('acceptance test 25: shown again, a card’s lists come in a new order, and
     }
   };
 
-  await setUp(page);
-  await openLesson(page, 1);
+  await setUpCompleted(page, testInfo);
+  await redoLesson(page, 1);
   await playLesson(page, lesson, 'right', record);
   const first = { ...seen };
 
-  await page.getByRole('button', { name: 'Play again' }).click();
+  await done(page);
+  await redoLesson(page, 1);
   await playLesson(page, lesson, 'right', record);
   expect(seen.options).not.toEqual(first.options);
   expect(seen.left).not.toEqual(first.left);
@@ -35,20 +35,21 @@ test('acceptance test 25: shown again, a card’s lists come in a new order, and
   expect([...seen.options].sort()).toEqual([...first.options].sort());
 });
 
-test('acceptance test 25 across a reload: the first presentation after it differs from the last one before it', async ({ page }) => {
+test('acceptance test 25 across a reload: the first presentation after it differs from the last one before it', async ({ page }, testInfo) => {
   const pack = await readFixturePack('pack-bakery.json');
   const lesson = pack.lessons[0];
   const at = lesson.cards.findIndex((c) => c.type === 'mcq');
   const reachCard = async () => {
-    await openLesson(page, 1);
+    await redoLesson(page, 1);
     await playCards(page, lesson.cards.slice(0, at), 'right');
     await expect(page.locator('.card-screen')).toHaveAttribute('data-card-id', lesson.cards[at].cardId);
     return texts(page, '.card-answers .option');
   };
 
-  await setUp(page);
+  await setUpCompleted(page, testInfo);
   let last = await reachCard();
   for (let i = 0; i < 3; i++) {
+    // A redo isn't stored: after a reload the app is back on the start screen.
     await page.reload();
     await expect(page.locator('.start-screen')).toBeVisible();
     await expect(page.locator('.lesson')).toHaveCount(2);
@@ -59,7 +60,7 @@ test('acceptance test 25 across a reload: the first presentation after it differ
   }
 });
 
-test('acceptance test 14: a variant card hides its notes until Check, and scores all or nothing', async ({ page }) => {
+test('acceptance test 14: a variant card hides its notes until Check, and scores all or nothing', async ({ page }, testInfo) => {
   const pack = await readFixturePack('pack-bakery.json');
   const lesson = pack.lessons[1];
   const at = lesson.cards.findIndex((c) => c.type === 'variant');
@@ -72,8 +73,8 @@ test('acceptance test 14: a variant card hides its notes until Check, and scores
     return variant.options.filter((o) => body.includes(o.note)).length;
   };
 
-  await setUp(page);
-  await openLesson(page, 2);
+  await setUpCompleted(page, testInfo);
+  await redoLesson(page, 2);
   await playCards(page, lesson.cards.slice(0, at), 'right');
   await expect(screen).toHaveAttribute('data-card-id', variant.cardId);
   expect(await notesShown()).toBe(0);
@@ -84,8 +85,10 @@ test('acceptance test 14: a variant card hides its notes until Check, and scores
   expect(await notesShown()).toBe(variant.options.length);
   await page.getByRole('button', { name: 'Continue' }).click();
   await playCards(page, lesson.cards.slice(at + 1), 'right');
+  await expect(page.locator('.summary-screen')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Play again' }).click();
+  await done(page);
+  await redoLesson(page, 2);
   await playCards(page, lesson.cards.slice(0, at), 'right');
   await expect(screen).toHaveAttribute('data-card-id', variant.cardId);
   await screen.getByRole('button', { name: correct[0].text, exact: true }).click();

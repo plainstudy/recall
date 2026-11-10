@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { expect } from '@playwright/test';
 import { readPack } from '../../engine/cards.js';
 import { plainText } from '../../engine/text.js';
+import { seededReport } from './seed.js';
 
 export const fixturePath = (name) => fileURLToPath(new URL(`../fixtures/${name}`, import.meta.url));
 
@@ -78,7 +79,7 @@ export function readStored(page) {
     const scope = new URL('./', location.href).href;
     const mirrorText = localStorage.getItem(`progress@${scope}`);
     const names = (await indexedDB.databases()).map((d) => d.name);
-    if (!names.includes(`data@${scope}`)) return { exists: false, progress: null, content: {}, mirror: mirrorText && JSON.parse(mirrorText) };
+    if (!names.includes(`data@${scope}`)) return { exists: false, progress: null, session: null, content: {}, mirror: mirrorText && JSON.parse(mirrorText) };
     const db = await new Promise((resolve, reject) => {
       const open = indexedDB.open(`data@${scope}`);
       open.onsuccess = () => resolve(open.result);
@@ -91,12 +92,14 @@ export function readStored(page) {
         request.onerror = () => reject(request.error);
       });
     const progress = (await read('progress', (s) => s.get('progress'))) || null;
+    const session = (await read('session', (s) => s.get('session'))) || null;
     const keys = await read('content', (s) => s.getAllKeys());
     const values = await read('content', (s) => s.getAll());
     db.close();
     return {
       exists: true,
       progress,
+      session,
       content: Object.fromEntries(keys.map((k, i) => [k, values[i]])),
       mirror: mirrorText && JSON.parse(mirrorText),
     };
@@ -128,8 +131,53 @@ export function writeStored(page, progress, { mirror = true } = {}) {
   );
 }
 
-export async function openLesson(page, number) {
-  await page.getByRole('button', { name: new RegExp(`^Lesson ${number}(?!\\d)`) }).click();
+// The browser's clock, held at one moment so that no test depends on the real date. The
+// default is midday UTC on the day the seeded reports are made, just after their time.
+export const SEED_NOW = '2026-11-15T12:00:00Z';
+export const DAY_MS = 86_400_000;
+
+export async function pinClock(page, time = SEED_NOW) {
+  await page.clock.setFixedTime(new Date(time));
+}
+
+// The phone's time read back from the page, as a clock the engine's day functions take.
+export async function pageClock(page) {
+  const { now, offset } = await page.evaluate(() => ({ now: Date.now(), offset: -new Date().getTimezoneOffset() }));
+  return { now: () => now, offsetMinutes: () => offset };
+}
+
+let seeds = 0;
+
+// Restores a report seeded for the test, generated as it runs. Returns the seed.
+export async function restoreSeed(page, testInfo, options = {}) {
+  const seed = await seededReport(testInfo.outputPath(`seed-${++seeds}.md`), options);
+  await chooseFile(page, 'Import', seed.path);
+  await expect(page.locator('.import-confirm')).toHaveAttribute('data-kind', 'report');
+  await page.getByRole('button', { name: 'Restore', exact: true }).click();
+  await expect(page.locator('.start-screen')).toBeVisible();
+  return seed;
+}
+
+const BOTH_COMPLETED = { currentLesson: null, currentCardIndex: 0, lessonsCompleted: ['bk_l01', 'bk_l02'], catchingUp: false };
+
+// A learner with these files installed and both lessons of the bakery pack completed, by a
+// seeded report, so that either can be played through Redo. The clock is pinned.
+export async function setUpCompleted(page, testInfo, files = ['glossary.json', 'pack-bakery.json']) {
+  await pinClock(page);
+  await setUp(page, files);
+  return restoreSeed(page, testInfo, { progress: (p) => ({ ...p, position: BOTH_COMPLETED }) });
+}
+
+// Starts the redo of a completed lesson, by its number in the list.
+export async function redoLesson(page, number) {
+  await page.getByRole('button', { name: `Redo lesson ${number}`, exact: true }).click();
+  await expect(page.locator('.card-screen')).toBeVisible();
+}
+
+// From a summary, back to the start screen.
+export async function done(page) {
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(page.locator('.start-screen')).toBeVisible();
 }
 
 export const expectedVerdict = (card, right) =>
@@ -190,36 +238,77 @@ export async function playLesson(page, lesson, how, onCard) {
   await expect(page.locator('.summary-screen')).toBeVisible();
 }
 
-// Plays these cards in turn, starting from the one on screen.
-export async function playCards(page, cards, how, onCard) {
+// Plays the card on screen through to Continue: a teach card is read, any other answered
+// right or wrong and checked.
+export async function playCard(page, card, how) {
   const screen = page.locator('.card-screen');
   const action = page.locator('.action-bar .primary');
-  for (let i = 0; i < cards.length; i++) {
-    const card = cards[i];
-    await expect(screen).toHaveAttribute('data-card-id', card.cardId);
-    if (onCard) await onCard(card, i);
-    if (card.type === 'teach') {
-      while ((await action.textContent()) === 'Show next') await action.click();
-      await expect(action).toHaveText('Continue');
-      await action.click();
-      continue;
-    }
-    await expect(action).toHaveText('Check');
-    await expect(action).toBeDisabled();
-    await answer(page, card, how);
-    await expect(action).toBeEnabled();
-    await action.click();
-    await expect(screen.locator('.verdict')).toHaveText(expectedVerdict(card, how === 'right'));
-    // The verdict is in view after Check, and not under the bar.
-    const verdictShown = await page.evaluate(() => {
-      const verdict = document.querySelector('.verdict').getBoundingClientRect();
-      const bar = document.querySelector('.action-bar').getBoundingClientRect();
-      return verdict.top >= 0 && verdict.bottom <= bar.top + 0.5;
-    });
-    expect(verdictShown).toBe(true);
+  await expect(screen).toHaveAttribute('data-card-id', card.cardId);
+  if (card.type === 'teach') {
+    while ((await action.textContent()) === 'Show next') await action.click();
     await expect(action).toHaveText('Continue');
     await action.click();
+    return;
   }
+  await expect(action).toHaveText('Check');
+  await expect(action).toBeDisabled();
+  await answer(page, card, how);
+  await expect(action).toBeEnabled();
+  await action.click();
+  await expect(screen.locator('.verdict')).toHaveText(expectedVerdict(card, how === 'right'));
+  // The verdict is in view after Check, and not under the bar.
+  const verdictShown = await page.evaluate(() => {
+    const verdict = document.querySelector('.verdict').getBoundingClientRect();
+    const bar = document.querySelector('.action-bar').getBoundingClientRect();
+    return verdict.top >= 0 && verdict.bottom <= bar.top + 0.5;
+  });
+  expect(verdictShown).toBe(true);
+  await expect(action).toHaveText('Continue');
+  await action.click();
+}
+
+// Plays these cards in turn, starting from the one on screen.
+export async function playCards(page, cards, how, onCard) {
+  for (let i = 0; i < cards.length; i++) {
+    await expect(page.locator('.card-screen')).toHaveAttribute('data-card-id', cards[i].cardId);
+    if (onCard) await onCard(cards[i], i);
+    await playCard(page, cards[i], how);
+  }
+}
+
+// Every card of these packs, as the engine reads them, by card id.
+export async function cardsOf(...fixtures) {
+  const cards = new Map();
+  for (const name of fixtures) {
+    for (const lesson of (await readFixturePack(name)).lessons) for (const card of lesson.cards) cards.set(card.cardId, card);
+  }
+  return cards;
+}
+
+// Plays whatever comes on screen until the summary shows: the order of a session is not
+// known ahead, and a card answered wrong comes back. `how` is 'right', 'wrong', or a
+// function of the card and how many times it has been shown before, returning one of
+// them. `upTo` stops early, after that many cards. Returns the ids of the cards played.
+export async function playSession(page, cards, { how = 'right', onCard = null, upTo = Infinity } = {}) {
+  const screen = page.locator('.card-screen');
+  const played = [];
+  while (played.length < upTo) {
+    await expect(page.locator('.card-screen, .summary-screen')).toBeVisible();
+    if ((await page.locator('.summary-screen').count()) > 0) break;
+    const cardId = await screen.getAttribute('data-card-id');
+    const card = cards.get(cardId);
+    if (!card) throw new Error(`a card the fixtures do not hold: ${cardId}`);
+    const before = played.filter((id) => id === cardId).length;
+    if (onCard) await onCard(card, played.length, before);
+    await playCard(page, card, typeof how === 'function' ? how(card, before) : how);
+    played.push(cardId);
+    // The next card, or the summary, takes this one's place.
+    await page.waitForFunction((shown) => {
+      const next = document.querySelector('.card-screen');
+      return Boolean(document.querySelector('.summary-screen')) || (next && next.getAttribute('data-card-id') !== shown);
+    }, cardId);
+  }
+  return played;
 }
 
 // The visible text of every answer control, which must be the content's text and nothing

@@ -100,11 +100,13 @@ code {
   font-size: 15px;
 }
 
-.notice {
+.notice,
+.session-notice {
   margin: 0 0 16px;
   padding: 10px 12px;
   border-left: 3px solid var(--slowdown);
   background: var(--panel);
+  overflow-wrap: anywhere;
 }
 
 /* The bar at the bottom: the screen's main button, always in the lower third. */
@@ -525,12 +527,36 @@ ul.answer-key-list {
   padding-top: 16px;
 }
 
+/* A lesson row: its number, title and markers, and Redo once it is completed. */
 .lesson {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+  width: 100%;
+  min-height: var(--tap);
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.lesson-text {
+  display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
-  width: 100%;
+  min-width: 0;
+}
+
+.lesson-locked {
+  background: none;
+  color: var(--muted);
+}
+
+.lesson-marker.lesson-marker-completed {
+  color: var(--running);
 }
 
 .lesson-number {
@@ -701,4 +727,67 @@ input[aria-invalid='true'] {
 .refusal-more,
 .refusal-after {
   color: var(--muted);
+}
+
+/* Phase 3 screens: the day's facts, the session length, the session and its summary. */
+.today {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.place-line {
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.session-notice {
+  margin-top: 16px;
+  margin-bottom: 0;
+}
+
+.length-choice {
+  display: flex;
+  gap: var(--gap);
+}
+
+.length {
+  flex: 1 1 0;
+  padding: 11px 4px;
+  text-align: center;
+}
+
+.length[aria-pressed='true'] {
+  border-color: var(--text);
+  font-weight: 600;
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+  margin-bottom: 12px;
+}
+
+.card-top .card-place {
+  margin-bottom: 0;
+}
+
+.end-session {
+  flex: 0 0 auto;
+}
+
+.summary-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.summary-report {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding-top: 24px;
 }

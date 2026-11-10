@@ -1,10 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { chooseFile, firstRun, install, readStored } from './helpers.js';
+import { chooseFile, firstRun, install, pinClock, readStored } from './helpers.js';
 import { seededReport } from './seed.js';
 
-// A phone with the bundle, and a learner restored from a report with atoms in it.
+// A phone with the bundle, and a learner restored from a report with atoms in it, on the
+// day the report was made.
 async function seededPhone(page, testInfo) {
   const seed = await seededReport(testInfo.outputPath('Bakery_School_Report_Sam-Baker_2026-11-15.md'));
+  await pinClock(page);
   await firstRun(page, { name: 'Test', role: 'Test' });
   await install(page, 'bundle-bakery.json');
   await chooseFile(page, 'Import', seed.path);

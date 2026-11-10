@@ -30,9 +30,10 @@ function bringIntoView(result) {
   window.scrollTo(0, Math.max(window.scrollY, Math.min(bottom, top - 16)));
 }
 
-// card: read by the engine. lists: this presentation's orders. onAnswered({ correct, trap })
-// runs once, at Check. onContinue runs when the learner moves on.
-export function cardScreen({ card, lists, place, onAnswered, onContinue }) {
+// card: read by the engine. lists: this presentation's orders. onAnswered({ correct, trap,
+// answer, score }) runs once, at Check, with the answer as given and how it scored.
+// onContinue runs when the learner moves on. onEnd, when given, puts End session at the top.
+export function cardScreen({ card, lists, place, onAnswered, onContinue, onEnd = null }) {
   const body = el('div', { class: 'card-body' });
   const answers = el('div', { class: 'card-answers push' });
   const result = el('div', { class: 'card-result', 'aria-live': 'polite' });
@@ -44,7 +45,12 @@ export function cardScreen({ card, lists, place, onAnswered, onContinue }) {
       'data-card-type': card.type || 'unknown',
       'data-card-id': card.cardId == null ? '' : String(card.cardId),
     },
-    el('p', { class: 'card-place', text: place }),
+    el(
+      'div',
+      { class: 'card-top' },
+      el('p', { class: 'card-place', text: place }),
+      onEnd ? el('button', { type: 'button', class: 'secondary end-session', text: 'End session', onclick: onEnd }) : null,
+    ),
     body,
     answers,
     result,
@@ -114,7 +120,7 @@ export function cardScreen({ card, lists, place, onAnswered, onContinue }) {
       if (key) result.append(key);
       for (const part of explanationFor(card, answer, score.correct)) result.append(textBlock('p', 'explanation', part));
       showContinue();
-      onAnswered({ correct: score.correct, trap: card.trap === true });
+      onAnswered({ correct: score.correct, trap: card.trap === true, answer, score });
       bringIntoView(result);
     };
   } catch {

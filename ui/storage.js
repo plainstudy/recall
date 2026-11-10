@@ -4,14 +4,15 @@
 // removes only these.
 //
 // Stores: `content` (the installed bundle details, glossary, track and packs), `progress`
-// (one object), `presentations` (the last option orders, by card id) and `session` (the
-// session in progress, from a later version).
+// (one object), `presentations` (the last option orders, by card id) and `session` (one
+// record, the unfinished daily session).
 
 import { upgradeProgress } from '../engine/migrate.js';
 import { newerOf } from '../engine/progress.js';
 
 const DB_VERSION = 1;
 const PROGRESS_KEY = 'progress';
+const SESSION_KEY = 'session';
 
 // The app's scope: the folder its page is served from, as the service worker sees it.
 export const appScope = () => new URL('./', location.href).href;
@@ -80,8 +81,14 @@ export async function openStorage(scope = appScope()) {
   const names = storageNames(scope);
   const db = await openDatabase(names.database);
 
-  async function putProgress(progress) {
-    await transaction(db, ['progress'], 'readwrite', (tx) => tx.objectStore('progress').put(progress, PROGRESS_KEY));
+  // A change made outside a session. With `clearSession`, the unfinished session's record
+  // goes in the same transaction: at a session's summary, and at a restore, which replaces
+  // the progress the record belonged to.
+  async function putProgress(progress, { clearSession = false } = {}) {
+    await transaction(db, clearSession ? ['progress', 'session'] : ['progress'], 'readwrite', (tx) => {
+      tx.objectStore('progress').put(progress, PROGRESS_KEY);
+      if (clearSession) tx.objectStore('session').delete(SESSION_KEY);
+    });
     writeMirror(names.mirror, progress);
   }
 
@@ -129,17 +136,45 @@ export async function openStorage(scope = appScope()) {
       return null;
     },
 
-    // A change made outside a session: profile, settings, report marks, restore.
+    // A change made outside a session: profile, settings, report marks, restore, and the
+    // end of a session.
     writeProgress: putProgress,
 
+    // One answer, in one transaction: the progress, and the unfinished daily session's
+    // record with it. A redo isn't stored, so it passes no record. The mirror is written
+    // after a session, not after each answer.
+    async writeAnswer(progress, record = null) {
+      await transaction(db, record ? ['progress', 'session'] : ['progress'], 'readwrite', (tx) => {
+        tx.objectStore('progress').put(progress, PROGRESS_KEY);
+        if (record) tx.objectStore('session').put(record, SESSION_KEY);
+      });
+    },
+
+    // The second copy of the progress, brought up to date when a session is left.
+    mirror(progress) {
+      writeMirror(names.mirror, progress);
+    },
+
+    // The unfinished daily session, or null.
+    async readSession() {
+      const request = await transaction(db, ['session'], 'readonly', (tx) => tx.objectStore('session').get(SESSION_KEY));
+      return request.result || null;
+    },
+
+    async clearSession() {
+      await transaction(db, ['session'], 'readwrite', (tx) => tx.objectStore('session').delete(SESSION_KEY));
+    },
+
     // An import or a removal: the content's puts and deletes and the new progress, in one
-    // transaction, then the mirror.
+    // transaction, then the mirror. An unfinished session goes with it: its plan may name
+    // cards the change has taken away, and its answers are already in the progress.
     async applyContent(writes, progress) {
-      await transaction(db, ['content', 'progress'], 'readwrite', (tx) => {
+      await transaction(db, ['content', 'progress', 'session'], 'readwrite', (tx) => {
         const content = tx.objectStore('content');
         for (const [key, value] of writes.put) content.put(value, key);
         for (const key of writes.remove) content.delete(key);
         tx.objectStore('progress').put(progress, PROGRESS_KEY);
+        tx.objectStore('session').delete(SESSION_KEY);
       });
       writeMirror(names.mirror, progress);
     },
@@ -153,9 +188,23 @@ export async function openStorage(scope = appScope()) {
       async put(key, value) {
         await transaction(db, ['presentations'], 'readwrite', (tx) => tx.objectStore('presentations').put(value, key));
       },
+      // When each card was last shown: Map card id -> the time, for choosing review cards.
+      async lastShown() {
+        const requests = await transaction(db, ['presentations'], 'readonly', (tx) => {
+          const store = tx.objectStore('presentations');
+          return { keys: store.getAllKeys(), values: store.getAll() };
+        });
+        const shown = new Map();
+        requests.keys.result.forEach((key, i) => {
+          const entry = requests.values.result[i];
+          if (entry && typeof entry.shownAt === 'number') shown.set(key, entry.shownAt);
+        });
+        return shown;
+      },
     },
 
-    // Asks the browser to keep this site's storage. Called at an import until it says yes.
+    // Asks the browser to keep this site's storage. Called at an import and at the first
+    // completed session, until it says yes.
     async persist() {
       try {
         if (navigator.storage && navigator.storage.persist && !(await navigator.storage.persisted())) {

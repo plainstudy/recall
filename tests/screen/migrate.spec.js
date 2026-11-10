@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { isId } from '../../engine/ids.js';
 import { asSchemaTwo } from '../unit/fixtures.mjs';
-import { chooseFile, firstRun, install, readStored, watchErrors, writeStored } from './helpers.js';
+import { chooseFile, firstRun, install, pinClock, readStored, watchErrors, writeStored } from './helpers.js';
 import { seededReport } from './seed.js';
 
 test('progress saved by an older app migrates on start with nothing lost, once, into both copies (test 38)', async ({ page }) => {
@@ -36,6 +36,7 @@ test('progress saved by an older app migrates on start with nothing lost, once, 
 test('a report from an older app restores, taking a new learner id and keeping this phone’s own (test 38)', async ({ page }, testInfo) => {
   const seed = await seededReport(testInfo.outputPath('older.md'), { older: true });
   expect(seed.progress.schemaVersion).toBe(2);
+  await pinClock(page);
   await firstRun(page, { name: 'Test', role: 'Test' });
   await install(page, 'bundle-bakery.json');
   const phone = (await readStored(page)).progress;

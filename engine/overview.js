@@ -45,8 +45,9 @@ export function lessonStates(catalogue, position) {
 //   lessons   lessonStates
 //   place     { number, total, title } for the current lesson, or null
 //   dueCount  the atoms due today
-//   notice    the one notice line, or null
-//   action    'continue', 'start', 'another', or null when there is nothing to study
+//   notice    the one notice line, or null, and noticeKind, which of the three it is:
+//             'catching-up', 'next-pack' or 'all-done'
+//   action   'continue', 'start', 'another', or null when there is nothing to study
 //   label     the large button's words
 export function overviewOf({ progress, catalogue, day, record }) {
   const { position, streak } = progress;
@@ -58,9 +59,10 @@ export function overviewOf({ progress, catalogue, day, record }) {
   const newLeft = lesson !== null && position.currentCardIndex < lesson.cards.length;
 
   let notice = null;
-  if (catchingUp) notice = OVERVIEW_TEXT.catchingUp(due.length);
-  else if (catalogue.order.stoppedAt) notice = OVERVIEW_TEXT.nextPackMissing;
-  else if (lessons.length > 0 && !current) notice = progress.installed.trackId ? OVERVIEW_TEXT.trackDone : OVERVIEW_TEXT.allDone;
+  let noticeKind = null;
+  if (catchingUp) [noticeKind, notice] = ['catching-up', OVERVIEW_TEXT.catchingUp(due.length)];
+  else if (catalogue.order.stoppedAt) [noticeKind, notice] = ['next-pack', OVERVIEW_TEXT.nextPackMissing];
+  else if (lessons.length > 0 && !current) [noticeKind, notice] = ['all-done', progress.installed.trackId ? OVERVIEW_TEXT.trackDone : OVERVIEW_TEXT.allDone];
 
   let action = null;
   if (canContinue(record, day)) action = 'continue';
@@ -75,6 +77,7 @@ export function overviewOf({ progress, catalogue, day, record }) {
     dueCount: due.length,
     catchingUp,
     notice,
+    noticeKind,
     action,
     label: action ? OVERVIEW_TEXT[action] : null,
   };

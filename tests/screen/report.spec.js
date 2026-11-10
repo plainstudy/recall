@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { PROGRESS_MESSAGES } from '../../engine/progress.js';
-import { chooseFile, firstRun, install, readStored } from './helpers.js';
+import { chooseFile, firstRun, install, pinClock, readStored } from './helpers.js';
 import { seededReport } from './seed.js';
 
 const REPORT_NAME = /^Bakery_School_Report_Sam-Baker_\d{4}-\d{2}-\d{2}\.md$/;
@@ -24,6 +24,8 @@ test('a saved report restores a wiped browser exactly: streak, position, every a
   baseURL,
 }, testInfo) => {
   await page.addInitScript(noShareSheet);
+  // The clock is held a few hours after the seeded report's time, on the same day.
+  await pinClock(page);
   const seed = await seededReport(testInfo.outputPath('seed.md'));
   await firstRun(page, { name: 'Test', role: 'Test' });
   await install(page, 'bundle-bakery.json');
@@ -44,6 +46,7 @@ test('a saved report restores a wiped browser exactly: streak, position, every a
   // A new browser profile: nothing stored at all.
   const context = await browser.newContext({ baseURL, viewport: { width: 360, height: 800 } });
   const wiped = await context.newPage();
+  await pinClock(wiped);
   await firstRun(wiped, { name: 'Test', role: 'Test' });
   await install(wiped, 'bundle-bakery.json');
   await restore(wiped, path);
@@ -95,6 +98,7 @@ test('restore warns when this phone’s own progress is newer and holds sessions
   const seed = await seededReport(testInfo.outputPath('seed.md'));
   const older = await seededReport(testInfo.outputPath('older.md'), { stamp: '2026-10-20T09:00:00+03:00' });
   const newer = await seededReport(testInfo.outputPath('newer.md'), { change: (text) => text.replace('"schemaVersion": 3', '"schemaVersion": 4') });
+  await pinClock(page);
   await firstRun(page);
   await install(page, 'bundle-bakery.json');
   await restore(page, seed.path);
